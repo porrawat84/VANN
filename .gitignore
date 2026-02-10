@@ -1,3 +1,19 @@
+# dependencies
+node_modules/
+
+# env
+.env
+
+# build outputs
+dist/
+build/
+out/
+release/
+
+# OS
+.DS_Store
+Thumbs.db
+
 # Logs
 logs
 *.log
@@ -22,3 +38,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
