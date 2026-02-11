@@ -1,7 +1,12 @@
 const net = require("net");
 
+const userId = process.argv[2] || "U1";
+const role = process.argv[3] || "USER";
+
 const socket = net.createConnection({ host: "127.0.0.1", port: 9000 }, () => {
-  console.log("Connected to TCP Seat Server");
+    console.log(`Connected as ${userId} (${role})`);
+  send({ type: "HELLO", userId, role });
+  send({ type: "SUBSCRIBE_TRIP", tripId: "T1" });
   send({ type: "LIST_SEATS", tripId: "T1" });
 });
 

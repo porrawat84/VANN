@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const { pool } = require("./db");
+const { SEATS } = require("./tripUtil");
 
 const HOLD_SECONDS = Number(process.env.HOLD_SECONDS || 120);
 
@@ -8,6 +9,7 @@ function token() {
 }
 
 async function listSeats(tripId) {
+  await ensureTripSeats(tripId);
   const { rows } = await pool.query(
     "SELECT seat_id, status FROM seat_status WHERE trip_id=$1 ORDER BY seat_id",
     [tripId]
@@ -18,6 +20,7 @@ async function listSeats(tripId) {
 }
 
 async function holdSeat(tripId, seatId, userId) {
+  await ensureTripSeats(tripId);
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -70,6 +73,7 @@ async function holdSeat(tripId, seatId, userId) {
 }
 
 async function confirmSeat(tripId, holdToken, userId) {
+  await ensureTripSeats(tripId);
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -139,4 +143,24 @@ async function releaseExpiredHolds() {
   );
 }
 
-module.exports = { listSeats, holdSeat, confirmSeat, releaseExpiredHolds };
+
+async function ensureTripSeats(tripId) {
+  // เช็คว่ามี seat แถวไหนอยู่แล้วบ้าง
+  const existing = await pool.query(
+    `SELECT seat_id FROM seat_status WHERE trip_id=$1`,
+    [tripId]
+  );
+  const have = new Set(existing.rows.map(r => r.seat_id));
+
+  const missing = SEATS.filter(s => !have.has(s));
+  if (missing.length === 0) return;
+
+  // ใส่ที่นั่งที่หายไปเป็น FREE
+  const values = missing.map((_, i) => `($1,$${i + 2},'FREE')`).join(",");
+  await pool.query(
+    `INSERT INTO seat_status(trip_id, seat_id, status) VALUES ${values}`,
+    [tripId, ...missing]
+  );
+}
+
+module.exports = { listSeats, holdSeat, confirmSeat, releaseExpiredHolds, ensureTripSeats };
