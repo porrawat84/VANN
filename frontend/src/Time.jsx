@@ -1,9 +1,9 @@
-import "./Time.css";
+import "./cssTime.css";
 import bg from "./assets/image/background.png";
 import logo from "./assets/image/logo.png";
 import { useState } from "react";
 
-function Time() {
+function Time({ goBack, goNext }) {
   const location = localStorage.getItem("location");
   const [selectedTime, setSelectedTime] = useState(null);
 
@@ -17,20 +17,39 @@ function Time() {
   };
 
   return (
-    <div className="app" style={{ backgroundImage: `url(${bg})` }}>
-      <img src={logo} className="logo" />
+    <div
+      className="app"
+      style={{ backgroundImage: `url(${bg})` }}
+    >
+      <img src={logo} className="logo" alt="logo" />
 
       <div className="content">
+        {/* ปุ่มย้อนกลับบนสุด */}
+        <button className="back-top" onClick={goBack}>
+          ← Back
+        </button>
+
         <h2>location</h2>
         <div className="pill">{location}</div>
 
         <h2>time schedule</h2>
 
         <div className="times">
-          {["10:00 am", "10:30 am", "11:00 am", "11:30 am","12:00 am","12:30 am","13:00 pm","13:30 pm"].map((t) => (
+          {[
+            "10:00 am",
+            "10:30 am",
+            "11:00 am",
+            "11:30 am",
+            "12:00 pm",
+            "12:30 pm",
+            "13:00 pm",
+            "13:30 pm",
+          ].map((t) => (
             <button
               key={t}
-              className={`time-btn ${selectedTime === t ? "selected" : ""}`}
+              className={`time-btn ${
+                selectedTime === t ? "selected" : ""
+              }`}
               onClick={() => handleSelect(t)}
             >
               {t}
@@ -39,8 +58,11 @@ function Time() {
         </div>
 
         {selectedTime && (
-          <button className="back-btn" onClick={goNext}>
-            back
+          <button
+            className="back-btn"
+            onClick={goNext}
+          >
+            confirm time
           </button>
         )}
       </div>

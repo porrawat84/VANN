@@ -1,4 +1,4 @@
-import "./Location.css";
+import "./cssLocation.css";
 import bg from "./assets/image/background.png";
 import logo from "./assets/image/logo.png";
 
