@@ -14,7 +14,7 @@ function Location({ goNext }) {
 
             <div className="content">
                 <h2>choose your destination</h2>
-                <h3>from : thammasat rangsit</h3>
+                <h3>from : thammasat van terminal</h3>
                 <div className="btn-group">
                     <button className="btn" onClick={() => handleSelect("Future Park Rangsit")}>
                         Future Park Rangsit

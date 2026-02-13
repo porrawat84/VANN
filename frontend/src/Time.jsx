@@ -12,22 +12,21 @@ function Time({ goBack, goNext }) {
     localStorage.setItem("time", time);
   };
 
-  const goNext = () => {
-    window.location.href = "/seat";
-  };
-
   return (
     <div
       className="app"
       style={{ backgroundImage: `url(${bg})` }}
     >
+
+      <button className="back-fixed" onClick={goBack}>
+    ← 
+  </button>
       <img src={logo} className="logo" alt="logo" />
+      
 
       <div className="content">
         {/* ปุ่มย้อนกลับบนสุด */}
-        <button className="back-top" onClick={goBack}>
-          ← Back
-        </button>
+        
 
         <h2>location</h2>
         <div className="pill">{location}</div>
@@ -59,7 +58,7 @@ function Time({ goBack, goNext }) {
 
         {selectedTime && (
           <button
-            className="back-btn"
+            className="confirm-btn"
             onClick={goNext}
           >
             confirm time

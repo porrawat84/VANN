@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import Location from "./Location.jsx";
-import Time from "./Time.css";
-import Seat from "./Seat.jsx";
+import Location from "./Location";
+import Time from "./Time";
+import Seat from "./Seat";
 // import Payment from "./Payment";
 // import Success from "./Success";
 
