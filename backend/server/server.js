@@ -208,4 +208,7 @@ const server = net.createServer((socket) => {
   });
 });
 
-server.listen(PORT, () => console.log(`TCP server listening on ${PORT}`));
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`TCP server listening on ${PORT}`);
+});
+
