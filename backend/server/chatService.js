@@ -1,3 +1,4 @@
+// backend/server/chatService.js
 const { pool } = require("./db");
 
 async function sendChat({ userId, sender, message }) {
@@ -7,7 +8,11 @@ async function sendChat({ userId, sender, message }) {
      RETURNING chat_id, created_at`,
     [userId, sender, message]
   );
-  return { chatId: ins.rows[0].chat_id, createdAt: ins.rows[0].created_at };
+
+  return {
+    chatId: ins.rows[0].chat_id,
+    createdAt: ins.rows[0].created_at,
+  };
 }
 
 async function getChatHistory(userId, limit = 50) {
@@ -19,7 +24,7 @@ async function getChatHistory(userId, limit = 50) {
      LIMIT $2`,
     [userId, limit]
   );
-  return rows.reverse(); // ให้เรียงเก่า->ใหม่
+  return rows.reverse(); // เก่า -> ใหม่
 }
 
 module.exports = { sendChat, getChatHistory };

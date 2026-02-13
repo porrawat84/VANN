@@ -5,6 +5,7 @@ const { listSeats, holdSeat, confirmSeat, releaseExpiredHolds } = require("./sea
 const { createBooking, getBookings, getBookingDetail } = require("./bookingService");
 const { sendChat, getChatHistory } = require("./chatService");
 const { createPromptPayPayment, startPollingCharge } = require("./paymentService");
+const { isBookingOpen } = require("./tripUtil");
 
 const PORT = Number(process.env.PORT || 9000);
 
@@ -57,8 +58,12 @@ const server = net.createServer((socket) => {
         // ---- session / subscribe
         if (msg.type === "HELLO") {
           clientInfo.userId = msg.userId || null;
-          clientInfo.role = msg.role === "ADMIN" ? "ADMIN" : "USER";
-          send(socket, { type: "HELLO_OK" });
+          
+          const wantAdmin = msg.role === "ADMIN";
+          const okAdmin = wantAdmin && msg.adminKey && msg.adminKey === process.env.ADMIN_KEY;
+
+          clientInfo.role = okAdmin ? "ADMIN" : "USER";
+          send(socket, { type: "HELLO_OK", role: clientInfo.role, isAdmin: clientInfo.role === "ADMIN" });
           continue;
         }
         if (msg.type === "SUBSCRIBE_TRIP") {
@@ -75,6 +80,11 @@ const server = net.createServer((socket) => {
         }
 
         if (msg.type === "HOLD") {
+          const open = isBookingOpen(msg.tripId);
+          if (!open.ok) {
+            send(socket, { type: "HOLD_FAIL", code: open.code });
+            continue;
+          }
           const r = await holdSeat(msg.tripId, msg.seat, msg.userId);
           if (r.ok) {
             send(socket, { type: "HOLD_OK", tripId: msg.tripId, seat: msg.seat, holdToken: r.holdToken, expiresInSec: r.expiresInSec });
@@ -98,6 +108,11 @@ const server = net.createServer((socket) => {
 
         // ---- booking
         if (msg.type === "CREATE_BOOKING") {
+          const open = isBookingOpen(msg.tripId);
+          if (!open.ok) {
+            send(socket, { type: "ERROR", code: open.code });
+            continue;
+          }
           const totalPriceSatang = Math.round(Number(msg.totalPriceBaht) * 100);
           const r = await createBooking({
             userId: msg.userId,
@@ -175,7 +190,7 @@ const server = net.createServer((socket) => {
             onPaid: () => {
               broadcastToUser(r.userId, { type: "EVENT_PAYMENT", bookingId: r.bookingId, status: "PAID", amount: r.amount });
               broadcastToAdmins({ type: "EVENT_PAYMENT", bookingId: r.bookingId, status: "PAID", amount: r.amount, userId: r.userId });
-              broadcastToTrip("T1", { type: "EVENT_BOOKING", bookingId: r.bookingId, status: "CONFIRMED" }); // ถ้าอยาก push ตาม trip
+              broadcastToTrip(r.tripId, { type: "EVENT_BOOKING", bookingId: r.bookingId, status: "CONFIRMED" });
             },
             onFail: (reason) => {
               broadcastToUser(r.userId, { type: "EVENT_PAYMENT", bookingId: r.bookingId, status: reason, amount: r.amount });
