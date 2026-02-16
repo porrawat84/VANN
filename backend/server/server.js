@@ -31,6 +31,10 @@ setInterval(() => { releaseExpiredHolds().catch(() => {}); }, 1000);
 const server = net.createServer((socket) => {
   console.log("Client connected:", socket.remoteAddress, socket.remotePort);
 
+  socket.on("error", (err) => {
+    console.log("Client socket error:", err.code || err.message);
+  });
+
   socket.on("close", () => {
     console.log("Client disconnected:", socket.remoteAddress, socket.remotePort);
   });
