@@ -6,7 +6,7 @@ const { createBooking, getBookings, getBookingDetail } = require("./bookingServi
 const { sendChat, getChatHistory } = require("./chatService");
 const { createPromptPayPayment, startPollingCharge } = require("./paymentService");
 const { isBookingOpen } = require("./tripUtil");
-const { signUp, signIn } = require("./authService");
+const { registerUser, loginUser, getUserRole } = require("./authService");
 
 const PORT = Number(process.env.PORT || 9000);
 
@@ -198,7 +198,28 @@ const server = net.createServer((socket) => {
         if (msg.type === "GET_BOOKING_DETAIL") {
           const detail = await getBookingDetail(msg.bookingId);
           if (!detail) send(socket, { type: "ERROR", code: "NO_BOOKING" });
-          else send(socket, { type: "BOOKING_DETAIL", detail });
+           else send(socket, { type: "BOOKING_DETAIL", detail });
+          continue;
+        }
+        // ---- auth
+        if (msg.type === "REGISTER") {
+          const r = await registerUser({
+            name: msg.name,
+            email: msg.email,
+            phone: msg.phone,
+            password: msg.password,
+          });
+          send(socket, { type: "REGISTER_OK", userId: r.userId, role: r.role });
+          continue;
+        }
+
+        if (msg.type === "LOGIN") {
+          const r = await loginUser({ email: msg.email, password: msg.password });
+          if (!r.ok) {
+            send(socket, { type: "LOGIN_FAIL", code: r.code });
+            continue;
+          }
+          send(socket, { type: "LOGIN_OK", userId: r.userId, role: r.role });
           continue;
         }
 
