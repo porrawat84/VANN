@@ -13,9 +13,9 @@ function sendTCP(obj) {
 function connectTCP() {
   socket = net.createConnection({ host: "127.0.0.1", port: 9000 }, () => {
     console.log("Electron connected to TCP server");
-    // ส่ง HELLO/SUBSCRIBE ตามระบบเรา
-    sendTCP({ type: "HELLO", userId: "U1", role: "USER" });
-    sendTCP({ type: "SUBSCRIBE_TRIP", tripId: "T1" });
+    if (win && !win.isDestroyed()) {
+      win.webContents.send("tcp-message", { type: "TCP_CONNECTED" });
+    }
   });
 
   socket.setEncoding("utf8");
@@ -37,6 +37,7 @@ function connectTCP() {
 }
 
 ipcMain.on("tcp-send", (_, packet) => {
+  if (!socket) return;
   socket.write(JSON.stringify(packet) + "\n");
 });
 

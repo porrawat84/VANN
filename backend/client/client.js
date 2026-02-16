@@ -2,12 +2,27 @@ const net = require("net");
 
 const userId = process.argv[2] || "U1";
 const role = process.argv[3] || "USER";
+const host = process.argv[4] || process.env.TCP_HOST || "127.0.0.1";
+const port = Number(process.argv[5] || process.env.TCP_PORT || 9000);
+const dest = process.argv[6] || "FP";
+const hhmm = process.argv[7] || "1000";
 
-const socket = net.createConnection({ host: "127.0.0.1", port: 9000 }, () => {
+function pad2(n){ return String(n).padStart(2,"0"); }
+function todayYMD(){
+  const d = new Date();
+  return `${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}`;
+}
+function makeTripId(dest="FP", hhmm="1000"){
+  return `${todayYMD()}_${dest}_${hhmm}`;
+}
+
+const tripId = makeTripId(dest, hhmm);
+
+const socket = net.createConnection({ host, port }, () => {
     console.log(`Connected as ${userId} (${role})`);
   send({ type: "HELLO", userId, role });
-  send({ type: "SUBSCRIBE_TRIP", tripId: "T1" });
-  send({ type: "LIST_SEATS", tripId: "T1" });
+  send({ type: "SUBSCRIBE_TRIP", tripId});
+  send({ type: "LIST_SEATS", tripId});
 });
 
 socket.setEncoding("utf8");
