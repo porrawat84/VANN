@@ -7,6 +7,7 @@ const { sendChat, getChatHistory } = require("./chatService");
 const { createPromptPayPayment, startPollingCharge } = require("./paymentService");
 const { isBookingOpen } = require("./tripUtil");
 const { registerUser, loginUser, getUserRole } = require("./authService");
+const { DESTS, TIMES, bangkokNow, makeTripId } = require("./tripUtil");
 
 const PORT = Number(process.env.PORT || 9000);
 
@@ -119,6 +120,27 @@ const server = net.createServer((socket) => {
           send(socket, { type: "SUBSCRIBE_OK", tripId: clientInfo.tripId });
           continue;
         }
+
+        if (msg.type === "GET_TODAY_TRIPS") {
+          const now = bangkokNow(); // เวลาไทย
+
+          const trips = [];
+          for (const dest of DESTS) {
+            for (const t of TIMES) {
+              const tripId = makeTripId(now, dest, t);
+
+              trips.push({
+                tripId,
+                dest,
+                hhmm: t
+              });
+            }
+          }
+
+          send(socket, { type: "TODAY_TRIPS", date: now.toISOString(), trips });
+          continue;
+        }
+
 
         // ---- seat
         if (msg.type === "LIST_SEATS") {
