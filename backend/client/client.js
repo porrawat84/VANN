@@ -2,6 +2,10 @@ const net = require("net");
 
 const userId = process.argv[2] || "U1";
 const role = process.argv[3] || "USER";
+const host = process.argv[4] || process.env.TCP_HOST || "127.0.0.1";
+const port = Number(process.argv[5] || process.env.TCP_PORT || 9000);
+const dest = process.argv[6] || "FP";
+const hhmm = process.argv[7] || "1000";
 
 function pad2(n){ return String(n).padStart(2,"0"); }
 function todayYMD(){
@@ -12,7 +16,9 @@ function makeTripId(dest="FP", hhmm="1000"){
   return `${todayYMD()}_${dest}_${hhmm}`;
 }
 
-const socket = net.createConnection({ host: "172.20.10.2", port: 9000 }, () => {
+const tripId = makeTripId(dest, hhmm);
+
+const socket = net.createConnection({ host, port }, () => {
     console.log(`Connected as ${userId} (${role})`);
   send({ type: "HELLO", userId, role });
   send({ type: "SUBSCRIBE_TRIP", tripId});

@@ -36,13 +36,13 @@ function Time({ goBack, goNext }) {
         <div className="times">
           {[
             "10:00 am",
-            "10:30 am",
             "11:00 am",
-            "11:30 am",
             "12:00 pm",
-            "12:30 pm",
-            "13:00 pm",
-            "13:30 pm",
+            "1:00 pm",
+            "2:00 pm",
+            "3:00 pm",
+            "4:00 pm",
+            "5:00 pm",
           ].map((t) => (
             <button
               key={t}
