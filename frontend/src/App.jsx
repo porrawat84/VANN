@@ -1,99 +1,118 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Signin from "./Signin";
 import Signup from "./Signup";
 import Location from "./Location";
 import Time from "./Time";
 import Seat from "./Seat";
-// import Payment from "./Payment";
-// import Success from "./Success";
-
-function pad2(n) {
-  return String(n).padStart(2, "0");
-}
-
-function todayYMD() {
-  const d = new Date();
-  return `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`;
-}
-
-function mapLocationToDestCode(location) {
-  const value = String(location || "").trim().toLowerCase();
-  if (value.includes("future")) return "FP";
-  if (value.includes("mo chit") || value.includes("หมอชิต")) return "MC";
-  if (value.includes("victory") || value.includes("อนุสาวรีย์")) return "VM";
-  return "FP";
-}
-
-function normalizeTimeToHHMM(timeLabel) {
-  const value = String(timeLabel || "").trim().toLowerCase();
-  const map = {
-    "10:00 am": "1000",
-    "11:00 am": "1100",
-    "12:00 pm": "1200",
-    "1:00 pm": "1300",
-    "2:00 pm": "1400",
-    "3:00 pm": "1500",
-    "4:00 pm": "1600",
-    "5:00 pm": "1700",
-  };
-  return map[value] || "1000";
-}
 
 function ensureSessionUserId() {
   const key = "sessionUserId";
   const existing = localStorage.getItem(key);
   if (existing) return existing;
-
   const generated = `guest-${Date.now()}`;
   localStorage.setItem(key, generated);
   return generated;
 }
 
-function App() {
+export default function App() {
   const [page, setPage] = useState("signin");
 
+  const [tcpConnected, setTcpConnected] = useState(false);
+  const [todayTrips, setTodayTrips] = useState([]);     // มาจาก server (Bangkok time)
+  const [seats, setSeats] = useState({});               // seat map ล่าสุด
+  const [selectedTripId, setSelectedTripId] = useState(null);
+
+  const userId = useMemo(() => ensureSessionUserId(), []);
+
+  const dest = localStorage.getItem("dest") || "FP";
+  const hhmm = localStorage.getItem("hhmm") || "1000";
+  const found = todayTrips.find((t) => t.dest === dest && t.hhmm === hhmm);
+
+
+  // 1) connect + listen messages
   useEffect(() => {
     if (!window.tcp) return;
 
-    const userId = ensureSessionUserId();
-    const location = localStorage.getItem("location");
+    const onMsg = (msg) => {
+      console.log("FROM TCP:", msg);
+
+      if (msg.type === "TCP_CONNECTED") {
+        setTcpConnected(true);
+        window.tcp.send({ type: "HELLO", userId, role: "USER" });
+        window.tcp.send({ type: "GET_TODAY_TRIPS" });
+      }
+
+      if (msg.type === "TODAY_TRIPS") {
+        setTodayTrips(msg.trips || []);
+      }
+
+      if (msg.type === "SEATS") {
+        setSeats(msg.seats || {});
+      }
+
+      if (msg.type === "EVENT_SEAT_UPDATE") {
+        setSeats((prev) => ({ ...prev, [msg.seat]: msg.status }));
+      }
+    };
+
+    // ถ้า preload ของคุณยังไม่มี off() ก็ใช้แบบนี้ไปก่อน
+    window.tcp.onMessage(onMsg);
+
+    // เผื่อบางครั้ง server ส่ง TCP_CONNECTED ไปแล้ว:
+    // ขอ trips ซ้ำได้ ไม่เสียหาย
+    window.tcp.send({ type: "GET_TODAY_TRIPS" });
+  }, [userId]);
+
+  // helper: สร้าง tripId จาก "วันนี้ของ server"
+  function computeTripIdFromSelection() {
+   const dest = localStorage.getItem("dest") || "FP";
+
     const time = localStorage.getItem("time");
 
-    const tripId = `${todayYMD()}_${mapLocationToDestCode(location)}_${normalizeTimeToHHMM(time)}`;
+    const hhmm = normalizeTimeToHHMM(time);
 
-    window.tcp.onMessage((msg) => {
-      console.log("FROM TCP:", msg);
-    });
+    const found = todayTrips.find((t) => t.dest === dest && t.hhmm === hhmm);
+    return found?.tripId || null;
+  }
 
-    window.tcp.send({ type: "HELLO", userId, role: "USER" });
+  // 2) เวลาไปหน้า seat ให้ subscribe + list seats ตามที่เลือก
+  useEffect(() => {
+    if (!window.tcp) return;
+    if (!tcpConnected) return;
+    if (page !== "seat") return;
+
+    const tripId = computeTripIdFromSelection();
+    if (!tripId) {
+      console.log("TripId not ready yet (maybe TODAY_TRIPS not loaded).");
+      return;
+    }
+
+    setSelectedTripId(tripId);
     window.tcp.send({ type: "SUBSCRIBE_TRIP", tripId });
     window.tcp.send({ type: "LIST_SEATS", tripId });
-  }, []);
+  }, [page, tcpConnected, todayTrips]);
 
-  const goTo = (nextPage) => {
-    setPage(nextPage);
-  };
+  const goTo = (nextPage) => setPage(nextPage);
 
   const pages = {
+    signin: (
+      <Signin
+        goNext={() => goTo("location")}
+        goSignup={() => goTo("signup")}
+      />
+    ),
+
+    signup: (
+      <Signup
+        goNext={() => goTo("signin")}
+      />
+    ),
+
     location: (
       <Location
         goNext={() => goTo("time")}
       />
     ),
-
-    signin: (
-    <Signin
-      goNext={() => goTo("location")}
-      goSignup={() => goTo("signup")}  // login สำเร็จ → ไปหน้า Location
-      />
-    ),
-
-    signup: (
-    <Signup
-      goNext={() => goTo("signin")}   // Signup สำเร็จ → ไปหน้า Signin
-      />
-    ),
-
 
     time: (
       <Time
@@ -106,20 +125,12 @@ function App() {
       <Seat
         goBack={() => goTo("time")}
         goNext={() => goTo("payment")}
+        // ส่ง state ให้ Seat ใช้เลย (ไม่ต้องต่อ tcp ใน Seat ซ้ำ)
+        seats={seats}
+        tripId={selectedTripId}
       />
     ),
-
-    // payment: (
-    //   <Payment
-    //     goBack={() => goTo("seat")}
-    //     goNext={() => goTo("success")}
-    //   />
-    // ),
-
-    // success: <Success />
   };
 
   return pages[page] || <div>Page not found</div>;
 }
-
-export default App;

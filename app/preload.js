@@ -2,6 +2,9 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("tcp", {
   send: (packet) => ipcRenderer.send("tcp-send", packet),
-  onMessage: (callback) => ipcRenderer.on("tcp-message", (_, msg) => callback(msg)),
+  onMessage: (callback) => {
+    const handler = (_evt, msg) => callback(msg);
+    ipcRenderer.on("tcp-message", handler);
+    return () => ipcRenderer.removeListener("tcp-message", handler);
+  },
 });
-
