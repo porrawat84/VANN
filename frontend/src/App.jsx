@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import Signin from "./Signin";
+import Signup from "./Signup";
 import Location from "./Location";
 import Time from "./Time";
 import Seat from "./Seat";
@@ -6,7 +8,7 @@ import Seat from "./Seat";
 // import Success from "./Success";
 
 function App() {
-  const [page, setPage] = useState("location");
+  const [page, setPage] = useState("signin");
 
   useEffect(() => {
     if (!window.tcp) return;
@@ -28,6 +30,20 @@ function App() {
         goNext={() => goTo("time")}
       />
     ),
+
+    signin: (
+    <Signin
+      goNext={() => goTo("location")}
+      goSignup={() => goTo("signup")}  // login สำเร็จ → ไปหน้า Location
+      />
+    ),
+
+    signup: (
+    <Signup
+      goNext={() => goTo("signin")}   // Signup สำเร็จ → ไปหน้า Signin
+      />
+    ),
+
 
     time: (
       <Time

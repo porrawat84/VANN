@@ -10,21 +10,21 @@ function Location({ goNext }) {
 
     return (
         <div className="app" style={{ backgroundImage: `url(${bg})` }}>
-            <img src={logo} className="logo" />
+            <img src={logo} className="location-logo" />
 
-            <div className="content">
+            <div className="content location">
                 <h2>choose your destination</h2>
                 <h3>from : thammasat van terminal</h3>
-                <div className="btn-group">
-                    <button className="btn" onClick={() => handleSelect("Future Park Rangsit")}>
+                <div className="btn location-group">
+                    <button className="btn location" onClick={() => handleSelect("Future Park Rangsit")}>
                         Future Park Rangsit
                     </button>
 
-                    <button className="btn" onClick={() => handleSelect("Mo Chit")}>
+                    <button className="btn location" onClick={() => handleSelect("Mo Chit")}>
                         Mo Chit
                     </button>
 
-                    <button className="btn" onClick={() => handleSelect("Victory Monument")}>
+                    <button className="btn location" onClick={() => handleSelect("Victory Monument")}>
                         Victory Monument
                     </button></div>
             </div>

@@ -1,0 +1,120 @@
+* {
+    box-sizing: border-box;
+    font-family: 'Grandstander', cursive;
+}
+
+body {
+    margin: 0;
+    height: 100vh;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ===== เต็มจอ + background ===== */
+.app {
+    width: 360px;
+    padding: 30px;
+    background-size: cover;
+    background-position: center;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    padding-top: 80px;
+
+}
+
+/* ===== โลโก้ ===== */
+.signin-logo {
+    width: 290px;
+    margin-bottom: 30px;
+    margin-top: 0%;
+}
+
+
+/* ===== การ์ดเหลือง ===== */
+.boxyellow {
+    width: 300px;
+    background-color: #fff4b0;
+
+    padding: 18px;
+    border-radius: 30px;
+    border: 1px solid black !important;
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    box-shadow: 0 12px 25px rgba(0,0,0,0.25);
+    margin-top: -40px;
+
+}
+
+/* ===== label ===== */
+label {
+  font-size: 16px;
+}
+
+/* ===== input ===== */
+.input {
+  height: 40px;
+  border-radius: 20px;
+  border: none;
+  padding: 0 15px;
+
+  background: #fdf9f9;
+  box-shadow: inset 0 3px 5px rgba(0,0,0,0.2);
+  outline: none;
+}
+
+
+/* ===== ปุ่ม ===== */
+/* =========================================
+   บังคับปุ่มให้อยู่ข้างกันและเปลี่ยนสี (ล่างสุดชนะเสมอ!)
+   ========================================= */
+.boxyellow  .signin-btn-group{
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    gap: 15px !important;
+    width: 100% !important;
+    margin-top: 15px !important;
+}
+
+
+.boxyellow .btn.signin-purple {
+  flex: 1 !important;
+    height: 40px !important;
+    border-radius: 20px !important;
+    border: 0.5px solid black !important;
+    cursor: pointer !important;
+    font-family: 'Grandstander', cursive !important;
+    font-size: 16px !important;
+    color: black !important;
+    background-color: #C0A3E5 !important;
+}
+
+.boxyellow .btn.signin-blue {
+  flex: 1 !important;
+    height: 40px !important;
+    border-radius: 20px !important;
+    border: 0.5px solid black !important;
+    cursor: pointer !important;
+    font-family: 'Grandstander', cursive !important;
+    font-size: 16px !important;
+    color: black !important;
+    background-color: #b7d6f2 !important;
+}
+
+/* ===== forgot ===== */
+.forgot {
+  font-size: 13px;
+  text-align: right;
+  margin-top: 8px;
+  text-decoration: underline;
+  cursor: pointer;
+}

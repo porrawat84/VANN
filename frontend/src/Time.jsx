@@ -21,10 +21,8 @@ function Time({ goBack, goNext }) {
       <button className="back-fixed" onClick={goBack}>
     ← 
   </button>
-      <img src={logo} className="logo" alt="logo" />
-      
 
-      <div className="content">
+      <div className="content time">
         {/* ปุ่มย้อนกลับบนสุด */}
         
 
