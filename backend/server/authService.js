@@ -35,7 +35,11 @@ async function registerUser({ name, email, phone, password }) {
     [name, email, phone || null, passwordHash]
   );
 
-  return { userId: rows[0].user_id, role: rows[0].role };
+  return { 
+    ok: true,
+    userId: rows[0].user_id,
+    role: rows[0].role
+  };
 }
 
 async function loginUser({ email, password }) {

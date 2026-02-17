@@ -47,15 +47,41 @@ export default function Signup({ goBack, goNext }) {
     };
 
     const handleSignup = () => {
-        // ป้องกันไว้อีกชั้น เผื่อเกิดข้อผิดพลาด
         if (!isFormValid()) {
             alert("กรุณากรอกข้อมูลให้ครบถ้วน อีเมลถูกต้อง และรหัสผ่านตรงกัน");
             return;
         }
-        
-        // TODO: ตรวจสอบข้อมูล / ส่ง backend
-        if (goNext) goNext();
+
+        const socket = new WebSocket("ws://localhost:8080");
+
+        socket.onopen = () => {
+            socket.send(JSON.stringify({
+                type: "REGISTER",
+                name: formData.username,
+                email: formData.email,
+                phone: formData.phone,
+                password: formData.password
+            }));
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            if (data.type === "REGISTER_OK") {
+                alert("สมัครสมาชิกสำเร็จ");
+                goNext();
+            }
+
+            if (data.type === "REGISTER_FAIL") {
+                alert("สมัครสมาชิกไม่สำเร็จ");
+            }
+        };
+
+        socket.onerror = () => {
+            alert("เชื่อมต่อ WebSocket ไม่ได้");
+        };
     };
+
     return (
         <div className="app" style={{ backgroundImage: `url(${bg})` }}>
             <img src={logo} className="signup-logo" alt="logo" />

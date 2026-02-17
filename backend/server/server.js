@@ -8,6 +8,7 @@ const { createPromptPayPayment, startPollingCharge } = require("./paymentService
 const { isBookingOpen } = require("./tripUtil");
 const { registerUser, loginUser, getUserRole } = require("./authService");
 const { DESTS, TIMES, bangkokNow, makeTripId } = require("./tripUtil");
+const WebSocket = require("ws");
 
 const PORT = Number(process.env.PORT || 9000);
 
@@ -322,6 +323,87 @@ const server = net.createServer((socket) => {
     }
   });
 });
+// ===== WebSocket Server =====
+const wss = new WebSocket.Server({ port: 8080 });
+
+wss.on("connection", (ws) => {
+  console.log("WebSocket client connected");
+
+  ws.on("message", async (message) => {
+    try {
+      const msg = JSON.parse(message);
+
+      // ---- LOGIN
+      if (msg.type === "LOGIN") {
+        const r = await loginUser({
+          email: msg.email,
+          password: msg.password,
+        });
+
+        if (!r.ok) {
+          ws.send(JSON.stringify({
+            type: "LOGIN_FAIL",
+            code: r.code
+          }));
+        } else {
+          ws.send(JSON.stringify({
+            type: "LOGIN_OK",
+            userId: r.userId,
+            role: r.role
+          }));
+        }
+      }
+
+      // ---- REGISTER
+      if (msg.type === "REGISTER") {
+          try {
+            const r = await registerUser({
+              name: msg.name,
+              email: msg.email,
+              phone: msg.phone,
+              password: msg.password,
+            });
+
+            console.log("REGISTER RESULT:", r);
+
+            if (!r.ok) {
+              ws.send(JSON.stringify({
+                type: "REGISTER_FAIL",
+                code: r.code
+              }));
+              return;
+            }
+
+            ws.send(JSON.stringify({
+              type: "REGISTER_OK",
+              userId: r.userId,
+              role: r.role
+            }));
+
+          } catch (err) {
+            console.error("REGISTER ERROR:", err);
+            ws.send(JSON.stringify({
+              type: "REGISTER_FAIL",
+              message: err.message
+            }));
+          }
+        }
+
+
+    } catch (err) {
+      ws.send(JSON.stringify({
+        type: "ERROR",
+        message: err.message
+      }));
+    }
+  });
+
+  ws.on("close", () => {
+    console.log("WebSocket client disconnected");
+  });
+});
+
+console.log("WebSocket server running on ws://localhost:8080");
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`TCP server listening on ${PORT}`);
