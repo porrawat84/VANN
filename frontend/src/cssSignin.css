@@ -67,6 +67,7 @@ label {
   border: none;
   padding: 0 15px;
 
+  color: black !important;
   background: #fdf9f9;
   box-shadow: inset 0 3px 5px rgba(0,0,0,0.2);
   outline: none;
