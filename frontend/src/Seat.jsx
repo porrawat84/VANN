@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import "./cssSeat.css";
 import bg from "./assets/image/background.png";
 
-export default function Seat({ goBack, seats = {}, tripId, userId }) {
+export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
   const [selected, setSelected] = useState([]);
   const holdTokensRef = useRef({}); // seatId -> holdToken
 
@@ -28,33 +28,6 @@ export default function Seat({ goBack, seats = {}, tripId, userId }) {
     if (!window.tcp) return;
     window.tcp.send(packet);
   };
-
-  const waitFor = (predicate, timeoutMs = 6000) =>
-    new Promise((resolve, reject) => {
-      const onMsg = (msg) => {
-        try {
-          if (predicate(msg)) {
-            cleanup();
-            resolve(msg);
-          }
-        } catch (e) {
-          cleanup();
-          reject(e);
-        }
-      };
-
-      const cleanup = () => {
-        clearTimeout(timer);
-        listenersRef.current.delete(onMsg);
-      };
-
-      const timer = setTimeout(() => {
-        cleanup();
-        reject(new Error("timeout"));
-      }, timeoutMs);
-
-      listenersRef.current.add(onMsg);
-    });
 
   const isReserved = (seatId) => {
     const st = seats?.[seatId];
@@ -90,41 +63,25 @@ export default function Seat({ goBack, seats = {}, tripId, userId }) {
     try {
       // 1) HOLD ทีละที่นั่ง (รอผลของ seat นั้นจริงๆ)
       for (const seatId of selected) {
-        tcpSend({ type: "HOLD", tripId, seat: seatId, userId: Number(userId) });
+        const holdMsg = await tcpRequest({ type:"HOLD", tripId, seat: seatId, userId: Number(userId) });
 
-        const holdMsg = await waitFor(
-          (m) =>
-            (m.type === "HOLD_OK" && m.tripId === tripId && m.seat === seatId) ||
-            (m.type === "HOLD_FAIL") ||
-            (m.type === "ERROR"),
-          8000
-        );
-
-        if (holdMsg.type === "ERROR") {
-          alert(`Server error: ${holdMsg.message || holdMsg.code}`);
-          tcpSend({ type: "LIST_SEATS", tripId });
+        if (holdMsg.type !== "HOLD_OK") {
+          alert(`HOLD ไม่สำเร็จ: ${holdMsg.code || holdMsg.message}`);
+          await tcpRequest({ type: "LIST_SEATS", tripId });
           return;
         }
-
         holdTokensRef.current[seatId] = holdMsg.holdToken;
       }
 
       // 2) CONFIRM ทีละที่นั่ง (รอให้ตรง seat ด้วย)
       for (const seatId of selected) {
         const holdToken = holdTokensRef.current[seatId];
-        tcpSend({ type: "CONFIRM", tripId, holdToken, userId: Number(userId) });
 
-        const confirmMsg = await waitFor(
-          (m) =>
-            (m.type === "CONFIRM_OK" && m.tripId === tripId && m.seat === seatId) ||
-            (m.type === "CONFIRM_FAIL") ||
-            (m.type === "ERROR"),
-          8000
-        );
+        const confirmMsg = await tcpRequest({ type:"CONFIRM", tripId, holdToken: holdTokensRef.current[seatId], userId: Number(userId) });
 
-        if (confirmMsg.type === "ERROR") {
-          alert(`Server error: ${confirmMsg.message || confirmMsg.code}`);
-          tcpSend({ type: "LIST_SEATS", tripId });
+        if (confirmMsg.type !== "CONFIRM_OK") {
+          alert(`CONFIRM ไม่สำเร็จ: ${confirmMsg.code || confirmMsg.message}`);
+          await tcpRequest({ type: "LIST_SEATS", tripId });
           return;
         }
       }

@@ -98,7 +98,7 @@ async function confirmSeat(tripId, holdToken, userId) {
       await client.query("ROLLBACK");
       return { ok: false, code: "NOT_HELD" };
     }
-    if (r.hold_user_id !== userId) {
+    if (String(r.hold_user_id) !== String(userId)) {
       await client.query("ROLLBACK");
       return { ok: false, code: "NOT_OWNER" };
     }
@@ -142,7 +142,6 @@ async function releaseExpiredHolds() {
      WHERE status='HELD' AND hold_expires_at <= NOW()`
   );
 }
-
 
 async function ensureTripSeats(tripId) {
   // เช็คว่ามี seat แถวไหนอยู่แล้วบ้าง

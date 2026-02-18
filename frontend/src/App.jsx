@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Signin from "./Signin";
 import Signup from "./Signup";
 import Location from "./Location";
@@ -21,6 +21,26 @@ function bangkokYMD() {
 }
 
 export default function App() {
+  const pendingRef = useRef(new Map());
+
+  const tcpRequest = (packet, timeoutMs = 6000) => {
+    const requestId = crypto.randomUUID();
+    return new Promise((resolve, reject) => {
+      const t = setTimeout(() => {
+        pendingRef.current.delete(requestId);
+        reject(new Error("timeout"));
+      }, timeoutMs);
+
+      pendingRef.current.set(requestId, (msg) => {
+        clearTimeout(t);
+        pendingRef.current.delete(requestId);
+        resolve(msg);
+      });
+
+      window.tcp.send({ ...packet, requestId });
+    });
+  };
+
   const [page, setPage] = useState("signin");
 
   const [connected, setConnected] = useState(false);
@@ -28,13 +48,10 @@ export default function App() {
   const [seats, setSeats] = useState({});
   const [selectedTripId, setSelectedTripId] = useState(null);
   const [authUserId, setAuthUserId] = useState(null);
-
   const [userId, setUserId] = useState(() => {
     const s = localStorage.getItem("userId");
     return s ? Number(s) : null;
   });
-
-
 
   const computeTripIdFromSelection = () => {
     const dest = localStorage.getItem("dest") || "FP";
@@ -51,11 +68,11 @@ export default function App() {
   useEffect(() => {
     if (!window.tcp) return;
 
-    // กันซ้ำแบบแรง ๆ
     window.tcp.offAllMessages?.();
 
-    const unsubscribe = window.tcp.onMessage((msg) => {
-      console.log("FROM TCP:", msg);
+    const handler = (msg) => {
+      const cb = msg.requestId && pendingRef.current.get(msg.requestId);
+      if (cb) return cb(msg);
 
       if (msg.type === "TODAY_TRIPS") setTodayTrips(msg.trips || []);
       if (msg.type === "SEATS") setSeats(msg.seats || {});
@@ -78,8 +95,9 @@ export default function App() {
       if (msg.type === "SIGN_IN_FAIL") alert("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
       if (msg.type === "HELLO_OK") setConnected(true);
       if (msg.type === "HELLO_FAIL") console.log("HELLO_FAIL:", msg.code);
-    });
+    };
 
+    const unsubscribe = window.tcp.onMessage(handler);
     // ขอ trips
     window.tcp.send({ type: "GET_TODAY_TRIPS" });
 
@@ -124,6 +142,7 @@ export default function App() {
         seats={seats}
         tripId={selectedTripId}
         userId={userId}
+        tcpRequest={tcpRequest}
       />
     ),
   };

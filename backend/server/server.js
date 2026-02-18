@@ -155,11 +155,11 @@ const server = net.createServer((socket) => {
           continue;
         }
 
-
+        const reply = (obj) => send(socket, { ...obj, requestId: msg.requestId });
         // ---- seat
         if (msg.type === "LIST_SEATS") {
           const seats = await listSeats(msg.tripId);
-          send(socket, { type: "SEATS", tripId: msg.tripId, seats });
+          reply({ type: "SEATS", tripId: msg.tripId, seats });
           continue;
         }
 
@@ -175,10 +175,9 @@ const server = net.createServer((socket) => {
           }
           const r = await holdSeat(msg.tripId, msg.seat, actorUserId);
           if (r.ok) {
-            send(socket, { type: "HOLD_OK", tripId: msg.tripId, seat: msg.seat, holdToken: r.holdToken, expiresInSec: r.expiresInSec });
-            broadcastToTrip(msg.tripId, { type: "EVENT_SEAT_UPDATE", tripId: msg.tripId, seat: msg.seat, status: "HELD" });
+            reply({ type: "HOLD_OK", tripId: msg.tripId, seat: msg.seat, holdToken: r.holdToken, expiresInSec: r.expiresInSec });
           } else {
-            send(socket, { type: "HOLD_FAIL", code: r.code });
+            reply({ type:"HOLD_FAIL", tripId: msg.tripId, code: r.code });
           }
           continue;
         }
@@ -190,10 +189,9 @@ const server = net.createServer((socket) => {
           }
           const r = await confirmSeat(msg.tripId, msg.holdToken, actorUserId)
           if (r.ok) {
-            send(socket, { type: "CONFIRM_OK", tripId: msg.tripId, seat: r.seatId });
-            broadcastToTrip(msg.tripId, { type: "EVENT_SEAT_UPDATE", tripId: msg.tripId, seat: r.seatId, status: "BOOKED" });
+            reply({ type: "CONFIRM_OK", tripId: msg.tripId, seat: r.seatId });
           } else {
-            send(socket, { type: "CONFIRM_FAIL", code: r.code });
+            reply({ type:"CONFIRM_FAIL", tripId: msg.tripId, code: r.code });
           }
           continue;
         }
