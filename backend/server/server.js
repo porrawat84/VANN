@@ -6,20 +6,13 @@ const { createBooking, getBookings, getBookingDetail } = require("./bookingServi
 const { sendChat, getChatHistory } = require("./chatService");
 const { createPromptPayPayment, startPollingCharge } = require("./paymentService");
 const { isBookingOpen } = require("./tripUtil");
-const {
-  registerUser,
-  loginUser,
-  getUserRole,
-  requestPasswordReset,
-  resetPassword
-} = require("./authService");
+const { registerUser, loginUser, getUserRole } = require("./authService");
 const { DESTS, TIMES, bangkokNow, makeTripId } = require("./tripUtil");
-const WebSocket = require("ws");
 
 const PORT = Number(process.env.PORT || 9000);
 
 // --- clients + subscriptions
-const clients = new Set();
+const clients = new Set(); // { socket, userId, role, tripId }
 function send(socket, obj) {
   socket.write(JSON.stringify(obj) + "\n");
 }
@@ -37,11 +30,21 @@ function broadcastToAdmins(obj) {
 setInterval(() => { releaseExpiredHolds().catch(() => {}); }, 1000);
 
 const server = net.createServer((socket) => {
+  console.log("Client connected:", socket.remoteAddress, socket.remotePort);
+
+  socket.on("error", (err) => {
+    console.log("Client socket error:", err.code || err.message);
+  });
+
+  socket.on("close", () => {
+    console.log("Client disconnected:", socket.remoteAddress, socket.remotePort);
+  });
   socket.setEncoding("utf8");
   let buffer = "";
 
   const clientInfo = { socket, userId: null, role: "USER", tripId: null };
   clients.add(clientInfo);
+
   socket.on("close", () => clients.delete(clientInfo));
 
   socket.on("data", async (chunk) => {
@@ -58,10 +61,45 @@ const server = net.createServer((socket) => {
       catch { send(socket, { type: "ERROR", code: "BAD_JSON" }); continue; }
 
       try {
+        const normalizeUserId = (v) => {
+          if (v === null || v === undefined) return null;
+          const n = Number(v);
+          return Number.isFinite(n) ? n : null;
+        };
 
-        // ================= AUTH =================
+        const requestedUserId = normalizeUserId(msg.userId);
+        const sessionUserId = normalizeUserId(clientInfo.userId);
 
-        if (msg.type === "REGISTER") {
+        // ถ้ามี session แล้ว client ส่ง userId มาไม่ตรง -> reject
+        if (sessionUserId != null && requestedUserId != null && requestedUserId !== sessionUserId) {
+          send(socket, { type: "ERROR", code: "USER_MISMATCH" });
+          continue;
+        }
+
+        // actor คือ session เป็นหลัก ถ้าไม่มี session ค่อยใช้ requested
+        const actorUserId = sessionUserId ?? requestedUserId;
+
+
+        // ---- session / subscribe
+        if (msg.type === "HELLO") {
+          // ต้องมี userId เป็นเลขจริง (หลัง login)
+          const uid = normalizeUserId(msg.userId);
+          if (uid == null) {
+            send(socket, { type: "HELLO_FAIL", code: "BAD_USER_ID" });
+            continue;
+          }
+
+          clientInfo.userId = uid;
+
+          const wantAdmin = msg.role === "ADMIN";
+          const okAdmin = wantAdmin && msg.adminKey && msg.adminKey === process.env.ADMIN_KEY;
+          clientInfo.role = okAdmin ? "ADMIN" : "USER";
+
+          send(socket, { type: "HELLO_OK", userId: uid, role: clientInfo.role, isAdmin: okAdmin });
+          continue;
+        }
+
+        if (msg.type === "SIGN_UP") {
           const r = await registerUser({
             name: msg.name,
             email: msg.email,
@@ -69,52 +107,229 @@ const server = net.createServer((socket) => {
             password: msg.password,
           });
 
+          clientInfo.userId = Number(r.userId);
+          clientInfo.role = r.role;
+
+          send(socket, { type: "SIGN_UP_OK", userId: clientInfo.userId, role: clientInfo.role });
+          continue;
+        }
+
+        if (msg.type === "SIGN_IN") {
+          const r = await loginUser({ email: msg.email, password: msg.password });
+
+          if (!r.ok) {
+            send(socket, { type: "SIGN_IN_FAIL", code: r.code });
+            continue;
+          }
+
+          clientInfo.userId = Number(r.userId);
+          clientInfo.role = r.role;
+
+          send(socket, { type: "SIGN_IN_OK", userId: clientInfo.userId, role: clientInfo.role });
+          continue;
+        }
+
+        if (msg.type === "SUBSCRIBE_TRIP") {
+          clientInfo.tripId = msg.tripId || null;
+          send(socket, { type: "SUBSCRIBE_OK", tripId: clientInfo.tripId });
+          continue;
+        }
+
+        if (msg.type === "GET_TODAY_TRIPS") {
+          const now = bangkokNow(); // เวลาไทย
+
+          const trips = [];
+          for (const dest of DESTS) {
+            for (const t of TIMES) {
+              const tripId = makeTripId(now, dest, t);
+
+              trips.push({
+                tripId,
+                dest,
+                hhmm: t
+              });
+            }
+          }
+
+          send(socket, { type: "TODAY_TRIPS", date: now.toISOString(), trips });
+          continue;
+        }
+
+
+        // ---- seat
+        if (msg.type === "LIST_SEATS") {
+          const seats = await listSeats(msg.tripId);
+          send(socket, { type: "SEATS", tripId: msg.tripId, seats });
+          continue;
+        }
+
+        if (msg.type === "HOLD") {
+          if (actorUserId == null) {
+            send(socket, { type: "HOLD_FAIL", tripId: msg.tripId, code: "AUTH_REQUIRED" });
+            continue;
+          }
+          const open = isBookingOpen(msg.tripId);
+          if (!open.ok) {
+            send(socket, { type: "HOLD_FAIL", tripId: msg.tripId, code: open.code });
+            continue;
+          }
+          const r = await holdSeat(msg.tripId, msg.seat, actorUserId);
+          if (r.ok) {
+            send(socket, { type: "HOLD_OK", tripId: msg.tripId, seat: msg.seat, holdToken: r.holdToken, expiresInSec: r.expiresInSec });
+            broadcastToTrip(msg.tripId, { type: "EVENT_SEAT_UPDATE", tripId: msg.tripId, seat: msg.seat, status: "HELD" });
+          } else {
+            send(socket, { type: "HOLD_FAIL", code: r.code });
+          }
+          continue;
+        }
+
+        if (msg.type === "CONFIRM") {
+          if (actorUserId == null) {
+            send(socket, { type: "CONFIRM_FAIL", tripId: msg.tripId, code: "AUTH_REQUIRED" });
+            continue;
+          }
+          const r = await confirmSeat(msg.tripId, msg.holdToken, actorUserId)
+          if (r.ok) {
+            send(socket, { type: "CONFIRM_OK", tripId: msg.tripId, seat: r.seatId });
+            broadcastToTrip(msg.tripId, { type: "EVENT_SEAT_UPDATE", tripId: msg.tripId, seat: r.seatId, status: "BOOKED" });
+          } else {
+            send(socket, { type: "CONFIRM_FAIL", code: r.code });
+          }
+          continue;
+        }
+
+        // ---- booking
+        if (msg.type === "CREATE_BOOKING") {
+          if (actorUserId == null) {
+            send(socket, { type: "ERROR", code: "AUTH_REQUIRED" });
+            continue;
+          }
+          const open = isBookingOpen(msg.tripId);
+          if (!open.ok) {
+            send(socket, { type: "ERROR", code: open.code });
+            continue;
+          }
+          const totalPriceSatang = Math.round(Number(msg.totalPriceBaht) * 100);
+          const r = await createBooking({
+            userId: actorUserId,
+            tripId: msg.tripId,
+            seats: msg.seats,
+            totalPriceSatang,
+          });
+          send(socket, { type: "CREATE_BOOKING_OK", bookingId: r.bookingId, status: r.status, amount: totalPriceSatang });
+          broadcastToUser(actorUserId, { type: "EVENT_BOOKING", bookingId: r.bookingId, status: r.status });
+          continue;
+        }
+
+        if (msg.type === "GET_BOOKINGS") {
+          if (!actorUserId) {
+            send(socket, { type: "ERROR", code: "AUTH_REQUIRED" });
+            continue;
+          }
+          const rows = await getBookings(actorUserId);
+          send(socket, { type: "BOOKINGS", bookings: rows });
+          continue;
+        }
+
+        if (msg.type === "GET_BOOKING_DETAIL") {
+          const detail = await getBookingDetail(msg.bookingId);
+          if (!detail) send(socket, { type: "ERROR", code: "NO_BOOKING" });
+           else send(socket, { type: "BOOKING_DETAIL", detail });
+          continue;
+        }
+        // ---- auth
+        if (msg.type === "REGISTER") {
+          const r = await registerUser({
+            name: msg.name,
+            email: msg.email,
+            phone: msg.phone,
+            password: msg.password,
+          });
           send(socket, { type: "REGISTER_OK", userId: r.userId, role: r.role });
           continue;
         }
 
         if (msg.type === "LOGIN") {
           const r = await loginUser({ email: msg.email, password: msg.password });
-
           if (!r.ok) {
             send(socket, { type: "LOGIN_FAIL", code: r.code });
             continue;
           }
-
           send(socket, { type: "LOGIN_OK", userId: r.userId, role: r.role });
           continue;
         }
 
-        // 🔐 FORGOT PASSWORD (TCP)
-        if (msg.type === "FORGOT_PASSWORD") {
-          const r = await requestPasswordReset(msg.email);
-
-          console.log("DEBUG requestPasswordReset result:", r);
-
-          if (r.token) {
-            console.log("===== RESET LINK =====");
-            console.log(`http://localhost:3000/reset-password?token=${r.token}`);
-            console.log("======================");
+        // ---- chat realtime
+        if (msg.type === "CHAT_SEND") {
+          if (!actorUserId) {
+            send(socket, { type: "ERROR", code: "AUTH_REQUIRED" });
+            continue;
           }
+          const r = await sendChat({ userId: actorUserId, sender: msg.sender, message: msg.message });
 
-          send(socket, { type: "FORGOT_PASSWORD_OK" });
+          // push realtime to user + admins
+          broadcastToUser(actorUserId, {
+            type: "EVENT_CHAT",
+            userId: actorUserId,
+            sender: msg.sender,
+            message: msg.message,
+            createdAt: r.createdAt,
+          });
+          broadcastToAdmins({
+            type: "EVENT_CHAT",
+            userId: actorUserId,
+            sender: msg.sender,
+            message: msg.message,
+            createdAt: r.createdAt,
+          });
+
+          send(socket, { type: "CHAT_SEND_OK", chatId: r.chatId });
           continue;
         }
 
-        // 🔐 RESET PASSWORD (TCP)
-        if (msg.type === "RESET_PASSWORD") {
-          const r = await resetPassword(msg.token, msg.newPassword);
-
-          if (!r.ok) {
-            send(socket, { type: "RESET_PASSWORD_FAIL", code: r.code });
-          } else {
-            send(socket, { type: "RESET_PASSWORD_OK" });
+        if (msg.type === "CHAT_HISTORY") {
+          if (!actorUserId) {
+            send(socket, { type: "ERROR", code: "AUTH_REQUIRED" });
+            continue;
           }
+          const rows = await getChatHistory(actorUserId, msg.limit || 50);
+          send(socket, { type: "CHAT_HISTORY_OK", userId: actorUserId, messages: rows });
+          continue;
+        }
+
+        // ---- payment (HTTPS to Opn, but internal comm stays TCP)
+        if (msg.type === "PAYMENT_CREATE_PROMPTPAY") {
+          const r = await createPromptPayPayment({ bookingId: msg.bookingId });
+          if (!r.ok) {
+            send(socket, { type: "PAYMENT_FAIL", code: r.code });
+            continue;
+          }
+
+          // ส่ง QR กลับไป
+          send(socket, { type: "PAYMENT_QR", bookingId: r.bookingId, paymentId: r.paymentId, amount: r.amount, qrUri: r.qrUri });
+
+          // realtime push ให้ user ด้วย (เผื่อหลายหน้าต่าง)
+          broadcastToUser(r.userId, { type: "EVENT_PAYMENT", bookingId: r.bookingId, status: "PENDING", amount: r.amount, qrUri: r.qrUri });
+
+          // เริ่ม polling อัตโนมัติ
+          startPollingCharge({
+            chargeId: r.chargeId,
+            bookingId: r.bookingId,
+            paymentId: r.paymentId,
+            onPaid: () => {
+              broadcastToUser(r.userId, { type: "EVENT_PAYMENT", bookingId: r.bookingId, status: "PAID", amount: r.amount });
+              broadcastToAdmins({ type: "EVENT_PAYMENT", bookingId: r.bookingId, status: "PAID", amount: r.amount, userId: r.userId });
+              broadcastToTrip(r.tripId, { type: "EVENT_BOOKING", bookingId: r.bookingId, status: "CONFIRMED" });
+            },
+            onFail: (reason) => {
+              broadcastToUser(r.userId, { type: "EVENT_PAYMENT", bookingId: r.bookingId, status: reason, amount: r.amount });
+            },
+          });
+
           continue;
         }
 
         send(socket, { type: "ERROR", code: "UNKNOWN_TYPE" });
-
       } catch (e) {
         send(socket, { type: "ERROR", code: "SERVER_ERROR", message: e.message });
       }
@@ -122,93 +337,7 @@ const server = net.createServer((socket) => {
   });
 });
 
-// ================= WebSocket Server =================
-
-const wss = new WebSocket.Server({ port: 8080 });
-
-wss.on("connection", (ws) => {
-
-  ws.on("message", async (message) => {
-    try {
-      const msg = JSON.parse(message);
-
-      if (msg.type === "LOGIN") {
-        const r = await loginUser({
-          email: msg.email,
-          password: msg.password,
-        });
-
-        if (!r.ok) {
-          ws.send(JSON.stringify({
-            type: "LOGIN_FAIL",
-            code: r.code
-          }));
-        } else {
-          ws.send(JSON.stringify({
-            type: "LOGIN_OK",
-            userId: r.userId,
-            role: r.role
-          }));
-        }
-      }
-
-      if (msg.type === "REGISTER") {
-        const r = await registerUser({
-          name: msg.name,
-          email: msg.email,
-          phone: msg.phone,
-          password: msg.password,
-        });
-
-        ws.send(JSON.stringify({
-          type: "REGISTER_OK",
-          userId: r.userId,
-          role: r.role
-        }));
-      }
-
-      // 🔐 FORGOT PASSWORD (WebSocket)
-      if (msg.type === "FORGOT_PASSWORD") {
-        const r = await requestPasswordReset(msg.email);
-
-        if (r.token) {
-          console.log("===== RESET LINK =====");
-          console.log(`http://localhost:3000/reset-password?token=${r.token}`);
-          console.log("======================");
-        }
-
-        ws.send(JSON.stringify({
-          type: "FORGOT_PASSWORD_OK"
-        }));
-      }
-
-      // 🔐 RESET PASSWORD (WebSocket)
-      if (msg.type === "RESET_PASSWORD") {
-        const r = await resetPassword(msg.token, msg.newPassword);
-
-        if (!r.ok) {
-          ws.send(JSON.stringify({
-            type: "RESET_PASSWORD_FAIL",
-            code: r.code
-          }));
-        } else {
-          ws.send(JSON.stringify({
-            type: "RESET_PASSWORD_OK"
-          }));
-        }
-      }
-
-    } catch (err) {
-      ws.send(JSON.stringify({
-        type: "ERROR",
-        message: err.message
-      }));
-    }
-  });
-});
-
-console.log("WebSocket server running on ws://localhost:8080");
-
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`TCP server listening on ${PORT}`);
 });
+

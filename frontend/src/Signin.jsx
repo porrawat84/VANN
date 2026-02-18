@@ -39,38 +39,23 @@ export default function Signin({ goNext, goSignup }) {
     };
 
     const handleLogin = () => {
-  if (!isFormValid()) {
-    alert("กรุณากรอกอีเมลและรหัสผ่านให้ถูกต้อง");
-    return;
-  }
-
-  const socket = new WebSocket("ws://localhost:8080");
-
-  socket.onopen = () => {
-    socket.send(JSON.stringify({
-      type: "LOGIN",
-      email: formData.email,
-      password: formData.password
-    }));
-  };
-
-  socket.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-
-    if (data.type === "LOGIN_OK") {
-      alert("เข้าสู่ระบบสำเร็จ");
-      goNext();
+    if (!isFormValid()) {
+        alert("กรุณากรอกอีเมลและรหัสผ่านให้ถูกต้อง");
+        return;
     }
 
-    if (data.type === "LOGIN_FAIL") {
-      alert("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+    if (!window.tcp) {
+        alert("TCP ยังไม่พร้อม (Electron preload ไม่เจอ window.tcp)");
+        return;
     }
-  };
 
-  socket.onerror = () => {
-    alert("เชื่อมต่อ WebSocket ไม่ได้");
-  };
-};
+    window.tcp.send({
+        type: "SIGN_IN",
+        email: formData.email.trim(),
+        password: formData.password
+    });
+    };
+
 
 
     return (

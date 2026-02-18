@@ -47,6 +47,10 @@ function parseTripId(tripId) {
 
 // ปิดจองก่อนออก 1 นาที
 function isBookingOpen(tripId, now = bangkokNow()) {
+  if (process.env.BOOKING_TIME_CHECK === "OFF") {
+    return { ok: true, testMode: true };
+  }
+  
   const info = parseTripId(tripId);
   if (!info) return { ok: false, code: "BAD_TRIP_ID" };
 
