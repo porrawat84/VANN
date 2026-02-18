@@ -4,6 +4,7 @@ import Signup from "./Signup";
 import Location from "./Location";
 import Time from "./Time";
 import Seat from "./Seat";
+import Forgetpass from "./Forgetpass";
 
 function bangkokYMD() {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -109,8 +110,12 @@ export default function App() {
   const goTo = (nextPage) => setPage(nextPage);
 
   const pages = {
-    signin: <Signin goNext={() => goTo("location")} goSignup={() => goTo("signup")} />,
-    signup: <Signup goNext={() => goTo("signin")} />,
+    signin: <Signin goNext={() => goTo("location")}
+              goSignup={() => goTo("signup")}
+              goForget={() => goTo("forgetpass")}/>,
+    signup: <Signup goNext={() => goTo("signin")} 
+              goBack={() => goTo("signin")}/>,
+    forgetpass: <Forgetpass goBack={() => goTo("signin")} />,
     location: <Location goNext={() => goTo("time")} />,
     time: <Time goBack={() => goTo("location")} goNext={() => goTo("seat")} />,
     seat: (

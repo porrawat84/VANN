@@ -69,6 +69,7 @@ export default function Signup({ goBack, goNext }) {
 
     return (
         <div className="app" style={{ backgroundImage: `url(${bg})` }}>
+            <btn className="back-btn" onClick={goBack}>←</btn>
             <img src={logo} className="signup-logo" alt="logo" />
 
             <div className="boxblue">

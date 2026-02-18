@@ -38,6 +38,35 @@ body {
     
 }
 
+.back-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+
+    z-index: 10;
+
+    width: 50px;
+    height: 40px;
+
+    border-radius: 20px;
+    border: 1px solid #111;
+    color: #111;
+
+    background: #FFF9B6;
+    backdrop-filter: blur(6px);
+
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 4%;
+
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    transition: 0.2s;
+}
+
 /* ===== การ์ด ===== */
 .boxblue {
     width: 300px;
