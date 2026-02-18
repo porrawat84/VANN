@@ -51,7 +51,8 @@ function createWindow() {
   });
 
   win.loadURL("http://localhost:5173");
-
+  //ส่งจริงลบอันบนเป็นอันล่าง
+  //win.loadFile(path.join(__dirname, "..", "frontend", "dist", "index.html"));
 }
 
 app.whenReady().then(() => {

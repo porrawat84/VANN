@@ -52,35 +52,20 @@ export default function Signup({ goBack, goNext }) {
             return;
         }
 
-        const socket = new WebSocket("ws://localhost:8080");
+        if (!window.tcp) {
+            alert("TCP ยังไม่พร้อม (Electron preload ไม่เจอ window.tcp)");
+            return;
+        }
 
-        socket.onopen = () => {
-            socket.send(JSON.stringify({
-                type: "REGISTER",
-                name: formData.username,
-                email: formData.email,
-                phone: formData.phone,
-                password: formData.password
-            }));
+        window.tcp.send({
+            type: "SIGN_UP",
+            name: formData.username.trim(),
+            email: formData.email.trim(),
+            phone: formData.phone.trim(),
+            password: formData.password
+        });
         };
 
-        socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-
-            if (data.type === "REGISTER_OK") {
-                alert("สมัครสมาชิกสำเร็จ");
-                goNext();
-            }
-
-            if (data.type === "REGISTER_FAIL") {
-                alert("สมัครสมาชิกไม่สำเร็จ");
-            }
-        };
-
-        socket.onerror = () => {
-            alert("เชื่อมต่อ WebSocket ไม่ได้");
-        };
-    };
 
     return (
         <div className="app" style={{ backgroundImage: `url(${bg})` }}>

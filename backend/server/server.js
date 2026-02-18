@@ -8,7 +8,6 @@ const { createPromptPayPayment, startPollingCharge } = require("./paymentService
 const { isBookingOpen } = require("./tripUtil");
 const { registerUser, loginUser, getUserRole } = require("./authService");
 const { DESTS, TIMES, bangkokNow, makeTripId } = require("./tripUtil");
-const WebSocket = require("ws");
 
 const PORT = Number(process.env.PORT || 9000);
 
@@ -62,60 +61,74 @@ const server = net.createServer((socket) => {
       catch { send(socket, { type: "ERROR", code: "BAD_JSON" }); continue; }
 
       try {
-        const requestedUserId = msg.userId != null ? String(msg.userId) : null;
-        const sessionUserId = clientInfo.userId != null ? String(clientInfo.userId) : null;
+        const normalizeUserId = (v) => {
+          if (v === null || v === undefined) return null;
+          const n = Number(v);
+          return Number.isFinite(n) ? n : null;
+        };
 
-        if (requestedUserId && sessionUserId && requestedUserId !== sessionUserId) {
+        const requestedUserId = normalizeUserId(msg.userId);
+        const sessionUserId = normalizeUserId(clientInfo.userId);
+
+        // ถ้ามี session แล้ว client ส่ง userId มาไม่ตรง -> reject
+        if (sessionUserId != null && requestedUserId != null && requestedUserId !== sessionUserId) {
           send(socket, { type: "ERROR", code: "USER_MISMATCH" });
           continue;
         }
 
-        const actorUserId = sessionUserId || requestedUserId;
+        // actor คือ session เป็นหลัก ถ้าไม่มี session ค่อยใช้ requested
+        const actorUserId = sessionUserId ?? requestedUserId;
+
 
         // ---- session / subscribe
         if (msg.type === "HELLO") {
-          clientInfo.userId = requestedUserId;
-          
+          // ต้องมี userId เป็นเลขจริง (หลัง login)
+          const uid = normalizeUserId(msg.userId);
+          if (uid == null) {
+            send(socket, { type: "HELLO_FAIL", code: "BAD_USER_ID" });
+            continue;
+          }
+
+          clientInfo.userId = uid;
+
           const wantAdmin = msg.role === "ADMIN";
           const okAdmin = wantAdmin && msg.adminKey && msg.adminKey === process.env.ADMIN_KEY;
-
           clientInfo.role = okAdmin ? "ADMIN" : "USER";
-          send(socket, { type: "HELLO_OK", userId: clientInfo.userId, role: clientInfo.role, isAdmin: clientInfo.role === "ADMIN" });
+
+          send(socket, { type: "HELLO_OK", userId: uid, role: clientInfo.role, isAdmin: okAdmin });
           continue;
         }
 
         if (msg.type === "SIGN_UP") {
-          const result = await signUp({
+          const r = await registerUser({
             name: msg.name,
-            phone: msg.phone,
             email: msg.email,
+            phone: msg.phone,
             password: msg.password,
           });
 
-          if (!result.ok) {
-            send(socket, { type: "SIGN_UP_FAIL", code: result.code });
-            continue;
-          }
+          clientInfo.userId = Number(r.userId);
+          clientInfo.role = r.role;
 
-          clientInfo.userId = result.user.userId;
-          clientInfo.role = result.user.role;
-          send(socket, { type: "SIGN_UP_OK", user: result.user });
+          send(socket, { type: "SIGN_UP_OK", userId: clientInfo.userId, role: clientInfo.role });
           continue;
         }
 
         if (msg.type === "SIGN_IN") {
-          const result = await signIn({ email: msg.email, password: msg.password });
+          const r = await loginUser({ email: msg.email, password: msg.password });
 
-          if (!result.ok) {
-            send(socket, { type: "SIGN_IN_FAIL", code: result.code });
+          if (!r.ok) {
+            send(socket, { type: "SIGN_IN_FAIL", code: r.code });
             continue;
           }
 
-          clientInfo.userId = result.user.userId;
-          clientInfo.role = result.user.role;
-          send(socket, { type: "SIGN_IN_OK", user: result.user });
+          clientInfo.userId = Number(r.userId);
+          clientInfo.role = r.role;
+
+          send(socket, { type: "SIGN_IN_OK", userId: clientInfo.userId, role: clientInfo.role });
           continue;
         }
+
         if (msg.type === "SUBSCRIBE_TRIP") {
           clientInfo.tripId = msg.tripId || null;
           send(socket, { type: "SUBSCRIBE_OK", tripId: clientInfo.tripId });
@@ -151,13 +164,13 @@ const server = net.createServer((socket) => {
         }
 
         if (msg.type === "HOLD") {
-          if (!actorUserId) {
-            send(socket, { type: "HOLD_FAIL", code: "AUTH_REQUIRED" });
+          if (actorUserId == null) {
+            send(socket, { type: "HOLD_FAIL", tripId: msg.tripId, code: "AUTH_REQUIRED" });
             continue;
           }
           const open = isBookingOpen(msg.tripId);
           if (!open.ok) {
-            send(socket, { type: "HOLD_FAIL", code: open.code });
+            send(socket, { type: "HOLD_FAIL", tripId: msg.tripId, code: open.code });
             continue;
           }
           const r = await holdSeat(msg.tripId, msg.seat, actorUserId);
@@ -171,11 +184,11 @@ const server = net.createServer((socket) => {
         }
 
         if (msg.type === "CONFIRM") {
-          if (!actorUserId) {
-            send(socket, { type: "CONFIRM_FAIL", code: "AUTH_REQUIRED" });
+          if (actorUserId == null) {
+            send(socket, { type: "CONFIRM_FAIL", tripId: msg.tripId, code: "AUTH_REQUIRED" });
             continue;
           }
-          const r = await confirmSeat(msg.tripId, msg.holdToken, actorUserId);
+          const r = await confirmSeat(msg.tripId, msg.holdToken, actorUserId)
           if (r.ok) {
             send(socket, { type: "CONFIRM_OK", tripId: msg.tripId, seat: r.seatId });
             broadcastToTrip(msg.tripId, { type: "EVENT_SEAT_UPDATE", tripId: msg.tripId, seat: r.seatId, status: "BOOKED" });
@@ -187,7 +200,7 @@ const server = net.createServer((socket) => {
 
         // ---- booking
         if (msg.type === "CREATE_BOOKING") {
-          if (!actorUserId) {
+          if (actorUserId == null) {
             send(socket, { type: "ERROR", code: "AUTH_REQUIRED" });
             continue;
           }
@@ -323,87 +336,6 @@ const server = net.createServer((socket) => {
     }
   });
 });
-// ===== WebSocket Server =====
-const wss = new WebSocket.Server({ port: 8080 });
-
-wss.on("connection", (ws) => {
-  console.log("WebSocket client connected");
-
-  ws.on("message", async (message) => {
-    try {
-      const msg = JSON.parse(message);
-
-      // ---- LOGIN
-      if (msg.type === "LOGIN") {
-        const r = await loginUser({
-          email: msg.email,
-          password: msg.password,
-        });
-
-        if (!r.ok) {
-          ws.send(JSON.stringify({
-            type: "LOGIN_FAIL",
-            code: r.code
-          }));
-        } else {
-          ws.send(JSON.stringify({
-            type: "LOGIN_OK",
-            userId: r.userId,
-            role: r.role
-          }));
-        }
-      }
-
-      // ---- REGISTER
-      if (msg.type === "REGISTER") {
-          try {
-            const r = await registerUser({
-              name: msg.name,
-              email: msg.email,
-              phone: msg.phone,
-              password: msg.password,
-            });
-
-            console.log("REGISTER RESULT:", r);
-
-            if (!r.ok) {
-              ws.send(JSON.stringify({
-                type: "REGISTER_FAIL",
-                code: r.code
-              }));
-              return;
-            }
-
-            ws.send(JSON.stringify({
-              type: "REGISTER_OK",
-              userId: r.userId,
-              role: r.role
-            }));
-
-          } catch (err) {
-            console.error("REGISTER ERROR:", err);
-            ws.send(JSON.stringify({
-              type: "REGISTER_FAIL",
-              message: err.message
-            }));
-          }
-        }
-
-
-    } catch (err) {
-      ws.send(JSON.stringify({
-        type: "ERROR",
-        message: err.message
-      }));
-    }
-  });
-
-  ws.on("close", () => {
-    console.log("WebSocket client disconnected");
-  });
-});
-
-console.log("WebSocket server running on ws://localhost:8080");
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`TCP server listening on ${PORT}`);

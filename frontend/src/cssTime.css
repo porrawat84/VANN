@@ -126,3 +126,17 @@
     transform: translateY(2px);
     box-shadow: 0 2px 0 #af99c6;
 }
+
+.time-btn.closed,
+.time-btn:disabled {
+  background: #ddd;
+  border: 2px solid #aaa;
+  opacity: 0.7;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.time-btn.closed:hover,
+.time-btn:disabled:hover {
+  transform: none;
+}

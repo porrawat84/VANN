@@ -1,35 +1,154 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./cssSeat.css";
 import bg from "./assets/image/background.png";
 
-
-function Seat({ goBack }) {
-
-
+export default function Seat({ goBack, seats = {}, tripId, userId }) {
   const [selected, setSelected] = useState([]);
-  const reservedSeats = ["B2", "D3"]; // 🔥 ตัวอย่างที่จองแล้ว
+  const holdTokensRef = useRef({}); // seatId -> holdToken
 
-  const toggleSeat = (num) => {
-    if (reservedSeats.includes(num)) return; // 🚫 กดไม่ได้ถ้าจองแล้ว
+  // --- simple message bus (กัน listener leak)
+  const listenersRef = useRef(new Set());
 
-    if (selected.includes(num)) {
-      setSelected(selected.filter((s) => s !== num));
-    } else {
-      setSelected([...selected, num]);
+  useEffect(() => {
+    if (!window.tcp) return;
+
+    const handler = (msg) => {
+      for (const fn of listenersRef.current) fn(msg);
+    };
+
+    window.tcp.onMessage(handler);
+    return () => {
+      // ถ้า preload ยังไม่มี offMessage ก็ถอดไม่ได้
+      // แต่เราทำให้ Seat ใส่ handler แค่ครั้งเดียวต่อ mount แล้ว
+      listenersRef.current.clear();
+    };
+  }, []);
+
+  const tcpSend = (packet) => {
+    if (!window.tcp) return;
+    window.tcp.send(packet);
+  };
+
+  const waitFor = (predicate, timeoutMs = 6000) =>
+    new Promise((resolve, reject) => {
+      const onMsg = (msg) => {
+        try {
+          if (predicate(msg)) {
+            cleanup();
+            resolve(msg);
+          }
+        } catch (e) {
+          cleanup();
+          reject(e);
+        }
+      };
+
+      const cleanup = () => {
+        clearTimeout(timer);
+        listenersRef.current.delete(onMsg);
+      };
+
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error("timeout"));
+      }, timeoutMs);
+
+      listenersRef.current.add(onMsg);
+    });
+
+  const isReserved = (seatId) => {
+    const st = seats?.[seatId];
+    return st === "BOOKED" || st === "HELD";
+  };
+
+  const toggleSeat = (seatId) => {
+    if (!tripId) {
+      alert("ยังโหลดรอบรถไม่เสร็จ ลองรอสักครู่");
+      return;
+    }
+    if (isReserved(seatId)) return;
+
+    setSelected((prev) =>
+      prev.includes(seatId) ? prev.filter((s) => s !== seatId) : [...prev, seatId]
+    );
+  };
+
+  const handleConfirm = async () => {
+    if (!tripId) {
+      alert("ยังโหลดรอบรถไม่เสร็จ ลองรอสักครู่แล้วเข้าหน้านี้ใหม่");
+      return;
+    }
+    if (!userId || Number.isNaN(Number(userId))) {
+      alert("กรุณาเข้าสู่ระบบก่อนจองที่นั่ง");
+      return;
+    }
+
+    if (selected.length === 0) return;
+
+    console.log("BOOKING tripId =", tripId, "selected =", selected);
+
+    try {
+      // 1) HOLD ทีละที่นั่ง (รอผลของ seat นั้นจริงๆ)
+      for (const seatId of selected) {
+        tcpSend({ type: "HOLD", tripId, seat: seatId, userId: Number(userId) });
+
+        const holdMsg = await waitFor(
+          (m) =>
+            (m.type === "HOLD_OK" && m.tripId === tripId && m.seat === seatId) ||
+            (m.type === "HOLD_FAIL") ||
+            (m.type === "ERROR"),
+          8000
+        );
+
+        if (holdMsg.type === "ERROR") {
+          alert(`Server error: ${holdMsg.message || holdMsg.code}`);
+          tcpSend({ type: "LIST_SEATS", tripId });
+          return;
+        }
+
+        holdTokensRef.current[seatId] = holdMsg.holdToken;
+      }
+
+      // 2) CONFIRM ทีละที่นั่ง (รอให้ตรง seat ด้วย)
+      for (const seatId of selected) {
+        const holdToken = holdTokensRef.current[seatId];
+        tcpSend({ type: "CONFIRM", tripId, holdToken, userId: Number(userId) });
+
+        const confirmMsg = await waitFor(
+          (m) =>
+            (m.type === "CONFIRM_OK" && m.tripId === tripId && m.seat === seatId) ||
+            (m.type === "CONFIRM_FAIL") ||
+            (m.type === "ERROR"),
+          8000
+        );
+
+        if (confirmMsg.type === "ERROR") {
+          alert(`Server error: ${confirmMsg.message || confirmMsg.code}`);
+          tcpSend({ type: "LIST_SEATS", tripId });
+          return;
+        }
+      }
+
+      alert(`จองสำเร็จ ✅ (${selected.join(", ")})`);
+      setSelected([]);
+      holdTokensRef.current = {};
+      tcpSend({ type: "LIST_SEATS", tripId });
+    } catch (e) {
+      console.error(e);
+      alert("เชื่อมต่อช้า/timeout ลองใหม่อีกครั้ง");
+      tcpSend({ type: "LIST_SEATS", tripId });
     }
   };
 
   const SeatBox = ({ num }) => {
-    const isReserved = reservedSeats.includes(num);
-    const isSelected = selected.includes(num);
+    const reserved = isReserved(num);
+    const chosen = selected.includes(num);
 
     return (
       <div
-        className={`seat 
-          ${isReserved ? "reserved" : ""}
-          ${isSelected ? "selected" : ""}
-        `}
+        className={`seat ${reserved ? "reserved" : ""} ${chosen ? "selected" : ""}`}
         onClick={() => toggleSeat(num)}
+        title={seats?.[num] || "UNKNOWN"}
       >
         {num}
       </div>
@@ -38,13 +157,11 @@ function Seat({ goBack }) {
 
   return (
     <div className="app" style={{ backgroundImage: `url(${bg})` }}>
-        <button className="back-btn" onClick={goBack}>
-  ←
-</button>
+      <button className="back-btn" onClick={goBack}>←</button>
+
       <div className="seat-card">
         <h2>Choose Seat</h2>
 
-        {/* 🔥 Legend */}
         <div className="legend">
           <div className="seat example"> Available</div>
           <div className="seat example selected"> Selected</div>
@@ -52,9 +169,6 @@ function Seat({ goBack }) {
         </div>
 
         <div className="bus">
-
-          
-
           <div className="row left">
             <SeatBox num="A1" />
             <SeatBox num="A2" />
@@ -89,15 +203,16 @@ function Seat({ goBack }) {
               <SeatBox num="E3" />
             </div>
           </div>
-
         </div>
 
-        <button className="confirm">
+        <button className="confirm" onClick={handleConfirm} disabled={!tripId}>
           Confirm ({selected.length})
         </button>
+
+        <div style={{ marginTop: 10, fontSize: 12 }}>
+          tripId: {tripId || "(loading...)"}
+        </div>
       </div>
     </div>
   );
 }
-
-export default Seat;
