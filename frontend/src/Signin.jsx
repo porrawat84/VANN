@@ -3,7 +3,7 @@ import "./cssSignin.css";
 import logo from "./assets/image/logo.png";
 import bg from "./assets/image/background.png";
 
-export default function Signin({ goNext, goSignup }) {
+export default function Signin({ goNext, goSignup, goForget }) {
 
         // 1. สร้าง State สำหรับเก็บ Email และ Password
     const [formData, setFormData] = useState({
@@ -81,19 +81,19 @@ export default function Signin({ goNext, goSignup }) {
                 <label>email :</label>
                 {/* เติม name, value, onChange ให้ input ผูกกับ State */}
                 <input 
-                    className="input" 
-                    type="email" 
-                    id="email" 
+                    className="input"
+                    type="email"
+                    id="email"
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
                 />
 
                 <label>password :</label>
-                <input 
-                    className="input" 
-                    type="password" 
-                    id="password" 
+                <input
+                    className="input"
+                    type="password"
+                    id="password"
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
@@ -107,7 +107,7 @@ export default function Signin({ goNext, goSignup }) {
                 sign in
                 </button></div>
 
-            <p className="forgot">forget password?</p>
+            <p className="forgot" onClick={goForget}>forget password?</p>
             </div>
 
         </div>

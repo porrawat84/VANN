@@ -99,6 +99,7 @@ export default function App() {
       <Signin
         goNext={() => goTo("location")}
         goSignup={() => goTo("signup")}
+        goForget={() => goTo("forgetpass")}
       />
     ),
 
@@ -107,6 +108,7 @@ export default function App() {
         goNext={() => goTo("signin")}
       />
     ),
+
 
     location: (
       <Location
