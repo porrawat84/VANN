@@ -3,7 +3,7 @@ import "./cssSignin.css";
 import logo from "./assets/image/logo.png";
 import bg from "./assets/image/background.png";
 
-export default function Signin({ goNext, goSignup, goForget }) {
+export default function Signin({  goSignup, goForget }) {
 
         // 1. สร้าง State สำหรับเก็บ Email และ Password
     const [formData, setFormData] = useState({
@@ -39,21 +39,21 @@ export default function Signin({ goNext, goSignup, goForget }) {
     };
 
     const handleLogin = () => {
-    if (!isFormValid()) {
-        alert("กรุณากรอกอีเมลและรหัสผ่านให้ถูกต้อง");
-        return;
-    }
+        if (!isFormValid()) {
+            alert("กรุณากรอกอีเมลและรหัสผ่านให้ถูกต้อง");
+            return;
+        }
 
-    if (!window.tcp) {
-        alert("TCP ยังไม่พร้อม (Electron preload ไม่เจอ window.tcp)");
-        return;
-    }
+        if (!window.tcp) {
+            alert("TCP ยังไม่พร้อม (Electron preload ไม่เจอ window.tcp)");
+            return;
+        }
 
-    window.tcp.send({
-        type: "SIGN_IN",
-        email: formData.email.trim(),
-        password: formData.password
-    });
+        window.tcp.send({
+            type: "SIGN_IN",
+            email: formData.email.trim(),
+            password: formData.password
+        });
     };
 
 
