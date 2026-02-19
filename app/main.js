@@ -14,7 +14,7 @@ function connectTCP() {
   const SERVER_HOST = process.env.VANN_SERVER_HOST || "192.168.1.50";
   const SERVER_PORT = Number(process.env.VANN_SERVER_PORT || 9000);
 
-  socket = net.createConnection({ host: SERVER_HOST, port: SERVER_PORT }, () => {
+  socket = net.createConnection({ host: "172.22.6.111", port: 9000}, () => {
     console.log("Electron connected to TCP server");
     if (win && !win.isDestroyed()) {
       win.webContents.send("tcp-message", { type: "TCP_CONNECTED" });
