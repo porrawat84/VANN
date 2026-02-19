@@ -4,7 +4,7 @@ import logo from "./assets/image/logo.png";
 
 function Location({ goNext }) {
   const handleSelect = (destCode) => {
-    localStorage.setItem("dest", destCode); // ✅ เก็บเป็น code
+    localStorage.setItem("dest", destCode); 
     goNext();
   };
 

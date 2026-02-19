@@ -88,7 +88,6 @@ export default function App() {
 
         window.tcp.send({ type: "HELLO", userId: id, role: "USER" });
 
-        alert(msg.type === "SIGN_IN_OK" ? "เข้าสู่ระบบสำเร็จ" : "สมัครสมาชิกสำเร็จ");
         setPage("location");
       }
 

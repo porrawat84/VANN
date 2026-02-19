@@ -5,115 +5,144 @@
 
 body {
     margin: 0;
-    height: 100vh;
+    min-height: 100vh;
 
     display: flex;
     justify-content: center;
     align-items: center;
+
+    padding: 20px; /* กันชิดขอบมือถือ */
 }
+
 
 /* ===== เต็มจอ + background ===== */
 .app {
-    width: 360px;
+    width: 100%;
+    max-width: 420px;   /* จำกัดไม่ให้ใหญ่เกิน */
     padding: 30px;
-    background-size: cover;
-    background-position: center;
 
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-
-    padding-top: 80px;
-
 }
+
 
 /* ===== โลโก้ ===== */
 .signin-logo {
-    width: 290px;
-    margin-bottom: 30px;
-    margin-top: 0%;
+    width: 80%;
+    max-width: 280px;
+    margin-bottom: 25px;
 }
 
 
 /* ===== กล่อง ===== */
 .boxyellow {
-    width: 300px;
+    width: 100%;
     background-color: #fff4b0;
 
-    padding: 18px;
+    padding: 20px;
     border-radius: 30px;
-    border: 1px solid black !important;
+    border: 1px solid black;
 
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 
     box-shadow: 0 12px 25px rgba(0,0,0,0.25);
-    margin-top: -40px;
-
 }
+
 
 /* ===== label ===== */
 label {
-  font-size: 16px;
-  color: #000;
+    font-size: 16px;
 }
+
 
 /* ===== input ===== */
 .input {
-  height: 40px;
-  border-radius: 20px;
-  border: none;
-  padding: 0 15px;
+    width: 100%;
+    height: 42px;
 
-  color: black !important;
-  background: #fdf9f9;
-  box-shadow: inset 0 3px 5px rgba(0,0,0,0.2);
-  outline: none;
+    border-radius: 20px;
+    border: none;
+    padding: 0 15px;
+
+    background: #fdf9f9;
+    box-shadow: inset 0 3px 5px rgba(0,0,0,0.2);
+    outline: none;
 }
 
 
 /* ===== ปุ่ม ===== */
-.boxyellow  .signin-btn-group{
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: space-between !important;
-    gap: 15px !important;
-    width: 100% !important;
-    margin-top: 15px !important;
+.signin-btn-group {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    margin-top: 12px;
 }
 
+.btn {
+    flex: 1;
+    height: 42px;
 
-.boxyellow .btn.signin-purple {
-  flex: 1 !important;
-    height: 40px !important;
-    border-radius: 20px !important;
-    border: 1px solid black !important;
-    cursor: pointer !important;
-    font-family: 'Grandstander', cursive !important;
-    font-size: 16px !important;
-    color: black !important;
-    background-color: #C0A3E5 !important;
+    border-radius: 20px;
+    border: 1px solid black;
+    cursor: pointer;
+
+    font-size: 15px;
 }
 
-.boxyellow .btn.signin-blue {
-  flex: 1 !important;
-    height: 40px !important;
-    border-radius: 20px !important;
-    border: 1px solid black !important;
-    cursor: pointer !important;
-    font-family: 'Grandstander', cursive !important;
-    font-size: 16px !important;
-    color: black !important;
-    background-color: #b7d6f2 !important;
+.signin-purple {
+    background-color: #C0A3E5;
 }
+
+.signin-blue {
+    background-color: #b7d6f2;
+}
+
 
 /* ===== forgot ===== */
 .forgot {
-  font-size: 13px;
-  text-align: right;
-  margin-top: 8px;
-  text-decoration: underline;
-  cursor: pointer;
+    font-size: 13px;
+    text-align: right;
+    margin-top: 8px;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+
+/* =========================
+  📱 มือถือเล็กมาก
+   ========================= */
+@media (max-width: 400px) {
+
+    .boxyellow {
+        padding: 16px;
+        width: 70%;
+    }
+
+    .btn {
+        font-size: 14px;
+        height: 38px;
+    }
+
+    label {
+        font-size: 14px;
+    }
+}
+
+
+/* =========================
+  💻 Desktop ใหญ่ขึ้น
+   ========================= */
+@media (min-width: 900px) {
+
+    .app {
+        max-width: 480px;
+    }
+
+    .boxyellow {
+        padding: 28px;
+    }
 }

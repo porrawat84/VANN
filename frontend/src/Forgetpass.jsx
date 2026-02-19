@@ -1,12 +1,12 @@
 import { useState } from "react";
-import "./cssForgetpass.css"; // ไฟล์ CSS สำหรับหน้านี้
-import bg from "./assets/image/background.png"; // ใช้ Background เดิม
+import "./cssForgetpass.css";
+import bg from "./assets/image/background.png";
 
 export default function ForgetPassword({ goBack }) {
-    // 1. สร้าง State สำหรับเก็บ Email
+    //  สร้าง State สำหรับเก็บ Email
     const [email, setEmail] = useState("");
 
-    // 2. ฟังก์ชันตรวจสอบและส่งอีเมล
+    // ฟังก์ชันตรวจสอบและส่งอีเมล
     const handleSendEmail = () => {
         const cleanEmail = email.trim();
         
@@ -21,14 +21,12 @@ export default function ForgetPassword({ goBack }) {
             return;
         }
 
-        // TODO: นำไปต่อ API หรือ WebSocket เพื่อส่งลิงก์รีเซ็ต
         alert(`ระบบได้ส่งลิงก์รีเซ็ตรหัสผ่านไปที่: ${cleanEmail}`);
     };
 
     return (
         <div className="app forget-app" style={{ backgroundImage: `url(${bg})` }}>
             <btn className="back-btn" onClick={goBack}>←</btn>
-            {/* ส่วนหัว: ปุ่มย้อนกลับ และ ชื่อหน้า */}
             <div className="forget-header">
                 <h1 className="title-text">forget password</h1>
             </div>

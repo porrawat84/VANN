@@ -1,17 +1,18 @@
-import { useState } from "react";
+
+import { useState} from "react";
 import "./cssSignin.css";
 import logo from "./assets/image/logo.png";
 import bg from "./assets/image/background.png";
 
 export default function Signin({  goSignup, goForget }) {
 
-        // 1. สร้าง State สำหรับเก็บ Email และ Password
+    // สร้าง State สำหรับเก็บ Email และ Password
     const [formData, setFormData] = useState({
         email: "",
         password: ""
     });
 
-    // 2. ฟังก์ชันจับการเปลี่ยนแปลงเวลาผู้ใช้พิมพ์
+    // ฟังก์ชันจับการเปลี่ยนแปลงเวลาผู้ใช้พิมพ์
     const handleChange = (e) => {
         setFormData({
             ...formData,
@@ -19,12 +20,12 @@ export default function Signin({  goSignup, goForget }) {
         });
     };
 
-    // 3. ฟังก์ชันเช็คว่ากรอกข้อมูลครบและอีเมลถูกต้องไหม
+    // ฟังก์ชันเช็คว่ากรอกข้อมูลครบและอีเมลถูกต้องไหม
     const isFormValid = () => {
         const { email, password } = formData;
-        const cleanEmail = email.trim(); // ป้องกันการเว้นวรรคหลอก
+        const cleanEmail = email.trim();
 
-        // เช็คว่ามีช่องไหนว่างไหม
+        
         if (!cleanEmail || !password) {
             return false;
         }
@@ -35,7 +36,7 @@ export default function Signin({  goSignup, goForget }) {
             return false;
         }
 
-        return true; // ข้อมูลเป๊ะ พร้อมให้กด!
+        return true; 
     };
 
     const handleLogin = () => {
@@ -55,6 +56,7 @@ export default function Signin({  goSignup, goForget }) {
             password: formData.password
         });
     };
+
 
 
 
