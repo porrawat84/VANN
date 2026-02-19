@@ -48,11 +48,11 @@ function parseTripId(tripId) {
 // ปิดจองก่อนออก 1 นาที
 function isBookingOpen(tripId, now = bangkokNow()) {
   
-  const info = parseTripId(tripId);
-  if (!info) return { ok: false, code: "BAD_TRIP_ID" };
+  // const info = parseTripId(tripId);
+  // if (!info) return { ok: false, code: "BAD_TRIP_ID" };
 
-  const closeAt = new Date(info.departAt.getTime() - 60 * 1000); // -1 นาที
-  if (now >= closeAt) return { ok: false, code: "TRIP_CLOSED" };
+  //const closeAt = new Date(info.departAt.getTime() - 60 * 1000); // -1 นาที
+  //if (now >= closeAt) return { ok: false, code: "TRIP_CLOSED" };
   return { ok: true };
 }
 

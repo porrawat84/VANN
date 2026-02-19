@@ -14,7 +14,7 @@ function connectTCP() {
   const SERVER_HOST = process.env.VANN_SERVER_HOST || "192.168.1.50";
   const SERVER_PORT = Number(process.env.VANN_SERVER_PORT || 9000);
 
-  socket = net.createConnection({ host: "172.22.6.111", port: 9000}, () => {
+  socket = net.createConnection({ host: "127.0.0.1", port: 9000}, () => { //เปลี่ยนip
     console.log("Electron connected to TCP server");
     if (win && !win.isDestroyed()) {
       win.webContents.send("tcp-message", { type: "TCP_CONNECTED" });
@@ -40,7 +40,13 @@ function connectTCP() {
 }
 
 ipcMain.on("tcp-send", (_, packet) => {
-  if (!socket) return;
+  if (!socket) {
+    console.log("Socket not connected");
+    return;
+  }
+
+  console.log("Sending to TCP server:", packet);
+
   socket.write(JSON.stringify(packet) + "\n");
 });
 

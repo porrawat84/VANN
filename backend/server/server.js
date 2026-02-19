@@ -128,6 +128,22 @@ const server = net.createServer((socket) => {
           send(socket, { type: "SIGN_IN_OK", userId: clientInfo.userId, role: clientInfo.role });
           continue;
         }
+        // ---- forgot password
+        if (msg.type === "FORGOT_PASSWORD") {
+          console.log("FORGOT_PASSWORD received:", msg.email);
+
+          if (!msg.email) {
+            send(socket, { type: "FORGOT_PASSWORD_FAIL", code: "NO_EMAIL" });
+            continue;
+          }
+
+          send(socket, {
+            type: "FORGOT_PASSWORD_OK",
+            email: msg.email
+          });
+
+          continue;
+        }
 
         if (msg.type === "SUBSCRIBE_TRIP") {
           clientInfo.tripId = msg.tripId || null;
