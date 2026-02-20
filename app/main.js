@@ -11,9 +11,6 @@ function sendTCP(obj) {
 }
 
 function connectTCP() {
-  const SERVER_HOST = process.env.VANN_SERVER_HOST || "192.168.1.50";
-  const SERVER_PORT = Number(process.env.VANN_SERVER_PORT || 9000);
-
   socket = net.createConnection({ host: "127.0.0.1", port: 9000}, () => { //เปลี่ยนip
     console.log("Electron connected to TCP server");
     if (win && !win.isDestroyed()) {
@@ -30,11 +27,9 @@ function connectTCP() {
       buffer = buffer.slice(idx + 1);
       if (!line) continue;
       const msg = JSON.parse(line);
-      // ส่งไปให้ frontend
       win.webContents.send("tcp-message", msg);
     }
   });
-
   socket.on("error", (err) => console.log("TCP error:", err.message));
   socket.on("close", () => console.log("TCP closed"));
 }
@@ -59,9 +54,8 @@ function createWindow() {
     },
   });
 
-  win.loadURL("http://localhost:5173");
-  //ส่งจริงลบอันบนเป็นอันล่าง
-  //win.loadFile(path.join(__dirname, "..", "frontend", "dist", "index.html"));
+  //win.loadURL("http://localhost:5173");
+  win.loadFile(path.join(__dirname, "..", "frontend", "dist", "index.html"));
 }
 
 app.whenReady().then(() => {

@@ -1,14 +1,12 @@
-// backend/server/tripUtil.js
 const DESTS = ["FP", "MC", "VM"];
 const TIMES = ["1000","1100","1200","1300","1400","1500","1600","1700"];
 
-// ที่นั่ง 14 ที่
+//14 ที่
 const SEATS = ["A1","A2","B1","B2","B3","C1","C2","C3","D1","D2","D3","E1","E2","E3"];
 
-// ใช้เวลาไทย (+07:00) แบบชัวร์ (ไม่พึ่ง timezone ของเครื่อง)
 function bangkokNow() {
   const now = new Date();
-  // แปลงให้เป็นเวลาไทยโดยบวก offset 7 ชั่วโมงจาก UTC
+  // แปลงให้เป็นเวลาไทย
   const utc = now.getTime() + now.getTimezoneOffset() * 60000;
   return new Date(utc + 7 * 3600000);
 }
@@ -38,8 +36,6 @@ function parseTripId(tripId) {
   if (!DESTS.includes(dest)) return null;
   if (!TIMES.includes(hhmm)) return null;
 
-  // สร้าง Date เวลาไทย (Bangkok) ด้วยการตั้งเป็น UTC-7
-  // (เพราะ Date.UTC เป็น UTC, ไทยเร็วกว่า UTC 7 ชั่วโมง)
   const departAt = new Date(Date.UTC(y, m - 1, d, hh - 7, mm, 0));
 
   return { y, m, d, dest, hhmm, departAt };
@@ -48,11 +44,11 @@ function parseTripId(tripId) {
 // ปิดจองก่อนออก 1 นาที
 function isBookingOpen(tripId, now = bangkokNow()) {
   
-  // const info = parseTripId(tripId);
-  // if (!info) return { ok: false, code: "BAD_TRIP_ID" };
+  const info = parseTripId(tripId);
+  if (!info) return { ok: false, code: "BAD_TRIP_ID" };
 
-  //const closeAt = new Date(info.departAt.getTime() - 60 * 1000); // -1 นาที
-  //if (now >= closeAt) return { ok: false, code: "TRIP_CLOSED" };
+  const closeAt = new Date(info.departAt.getTime() - 60 * 1000);
+  if (now >= closeAt) return { ok: false, code: "TRIP_CLOSED" };
   return { ok: true };
 }
 

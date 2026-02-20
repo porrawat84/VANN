@@ -1,7 +1,6 @@
 const crypto = require("crypto");
 const { pool } = require("./db");
 
-// hash แบบ pbkdf2 (ไม่ต้องลงแพ็กเกจเพิ่ม)
 function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
   const iterations = 120000;
   const keylen = 32;

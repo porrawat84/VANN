@@ -18,8 +18,6 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
 
     window.tcp.onMessage(handler);
     return () => {
-      // ถ้า preload ยังไม่มี offMessage ก็ถอดไม่ได้
-      // แต่เราทำให้ Seat ใส่ handler แค่ครั้งเดียวต่อ mount แล้ว
       listenersRef.current.clear();
     };
   }, []);
