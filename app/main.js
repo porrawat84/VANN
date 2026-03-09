@@ -1,6 +1,9 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 const net = require("net");
+require("dotenv").config();
+const TCP_HOST = process.env.VANN_SERVER_HOST || "127.0.0.1";
+const TCP_PORT = Number(process.env.VANN_SERVER_PORT || 9000);
 
 let win;
 let socket;
@@ -11,12 +14,12 @@ function sendTCP(obj) {
 }
 
 function connectTCP() {
-  socket = net.createConnection({ host: "127.0.0.1", port: 9000}, () => { //เปลี่ยนip
-    console.log("Electron connected to TCP server");
+  socket = net.createConnection({ host: TCP_HOST, port: TCP_PORT }, () => {
+    console.log(`Electron connected to TCP server at ${TCP_HOST}:${TCP_PORT}`);
     if (win && !win.isDestroyed()) {
       win.webContents.send("tcp-message", { type: "TCP_CONNECTED" });
     }
-  });
+});
 
   socket.setEncoding("utf8");
   socket.on("data", (chunk) => {
@@ -46,7 +49,7 @@ ipcMain.on("tcp-send", (_, packet) => {
     return;
   }
 
-  console.log("Sending to TCP server:", packet);
+  console.log("Sending to TCP server:", packet);//เอาไว้debugเฉยๆส่งจริงอย่าลืมลบออก 
 
   socket.write(JSON.stringify(packet) + "\n");
 });
