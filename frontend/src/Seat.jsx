@@ -5,22 +5,8 @@ import bg from "./assets/image/background.png";
 export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
   const [selected, setSelected] = useState([]);
   const holdTokensRef = useRef({}); // seatId -> holdToken
-
-  // --- simple message bus (กัน listener leak)
-  const listenersRef = useRef(new Set());
-
-  useEffect(() => {
-    if (!window.tcp) return;
-
-    const handler = (msg) => {
-      for (const fn of listenersRef.current) fn(msg);
-    };
-
-    window.tcp.onMessage(handler);
-    return () => {
-      listenersRef.current.clear();
-    };
-  }, []);
+  const [showSummary, setShowSummary] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const tcpSend = (packet) => {
     if (!window.tcp) return;

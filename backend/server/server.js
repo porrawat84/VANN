@@ -189,11 +189,25 @@ const server = net.createServer((socket) => {
             send(socket, { type: "HOLD_FAIL", tripId: msg.tripId, code: open.code });
             continue;
           }
+
           const r = await holdSeat(msg.tripId, msg.seat, actorUserId);
           if (r.ok) {
-            reply({ type: "HOLD_OK", tripId: msg.tripId, seat: msg.seat, holdToken: r.holdToken, expiresInSec: r.expiresInSec });
+            reply({
+              type: "HOLD_OK",
+              tripId: msg.tripId,
+              seat: msg.seat,
+              holdToken: r.holdToken,
+              expiresInSec: r.expiresInSec
+            });
+
+            broadcastToTrip(msg.tripId, {
+              type: "EVENT_SEAT_UPDATE",
+              tripId: msg.tripId,
+              seat: msg.seat,
+              status: "HELD"
+            });
           } else {
-            reply({ type:"HOLD_FAIL", tripId: msg.tripId, code: r.code });
+            reply({ type: "HOLD_FAIL", tripId: msg.tripId, code: r.code });
           }
           continue;
         }
@@ -203,11 +217,19 @@ const server = net.createServer((socket) => {
             send(socket, { type: "CONFIRM_FAIL", tripId: msg.tripId, code: "AUTH_REQUIRED" });
             continue;
           }
-          const r = await confirmSeat(msg.tripId, msg.holdToken, actorUserId)
+
+          const r = await confirmSeat(msg.tripId, msg.holdToken, actorUserId);
           if (r.ok) {
             reply({ type: "CONFIRM_OK", tripId: msg.tripId, seat: r.seatId });
+
+            broadcastToTrip(msg.tripId, {
+              type: "EVENT_SEAT_UPDATE",
+              tripId: msg.tripId,
+              seat: r.seatId,
+              status: "BOOKED"
+            });
           } else {
-            reply({ type:"CONFIRM_FAIL", tripId: msg.tripId, code: r.code });
+            reply({ type: "CONFIRM_FAIL", tripId: msg.tripId, code: r.code });
           }
           continue;
         }
@@ -246,9 +268,23 @@ const server = net.createServer((socket) => {
         }
 
         if (msg.type === "GET_BOOKING_DETAIL") {
+          if (actorUserId == null) {
+            send(socket, { type: "ERROR", code: "AUTH_REQUIRED" });
+            continue;
+          }
+
           const detail = await getBookingDetail(msg.bookingId);
-          if (!detail) send(socket, { type: "ERROR", code: "NO_BOOKING" });
-           else send(socket, { type: "BOOKING_DETAIL", detail });
+          if (!detail) {
+            send(socket, { type: "ERROR", code: "NO_BOOKING" });
+            continue;
+          }
+
+          if (clientInfo.role !== "ADMIN" && Number(detail.user_id) !== Number(actorUserId)) {
+            send(socket, { type: "ERROR", code: "FORBIDDEN" });
+            continue;
+          }
+
+          send(socket, { type: "BOOKING_DETAIL", detail });
           continue;
         }
         // ---- auth

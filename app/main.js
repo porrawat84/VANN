@@ -11,7 +11,7 @@ function sendTCP(obj) {
 }
 
 function connectTCP() {
-  socket = net.createConnection({ host: "172.20.10.2", port: 9000}, () => { //เปลี่ยนip
+  socket = net.createConnection({ host: "127.0.0.1", port: 9000}, () => { //เปลี่ยนip
     console.log("Electron connected to TCP server");
     if (win && !win.isDestroyed()) {
       win.webContents.send("tcp-message", { type: "TCP_CONNECTED" });
@@ -26,8 +26,14 @@ function connectTCP() {
       const line = buffer.slice(0, idx).trim();
       buffer = buffer.slice(idx + 1);
       if (!line) continue;
-      const msg = JSON.parse(line);
-      win.webContents.send("tcp-message", msg);
+      try {
+        const msg = JSON.parse(line);
+        if (win && !win.isDestroyed()) {
+          win.webContents.send("tcp-message", msg);
+        }
+      } catch (err) {
+        console.log("Bad TCP JSON from server:", err.message, line);
+      }
     }
   });
   socket.on("error", (err) => console.log("TCP error:", err.message));

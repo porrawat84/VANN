@@ -110,8 +110,6 @@ export default function App() {
     return () => unsubscribe?.();
   }, []);
 
-
-  // 2) เข้าหน้า seat แล้ว subscribe + list seats
   useEffect(() => {
     if (!window.tcp) return;
     if (page !== "seat") return;
@@ -122,7 +120,7 @@ export default function App() {
     setSelectedTripId(tripId);
     window.tcp.send({ type: "SUBSCRIBE_TRIP", tripId });
     window.tcp.send({ type: "LIST_SEATS", tripId });
-  }, [page, todayTrips]);
+  }, [page]);
 
   const goTo = (nextPage) => setPage(nextPage);
 
