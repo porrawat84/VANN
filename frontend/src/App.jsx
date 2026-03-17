@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Signin from "./Signin";
 import Signup from "./Signup";
 import Location from "./Location";
@@ -22,6 +22,7 @@ function bangkokYMD() {
 
 export default function App() {
   const pendingRef = useRef(new Map());
+  const toastTimerRef = useRef(null);
 
   const tcpRequest = (packet, timeoutMs = 6000) => {
     const requestId = crypto.randomUUID();
@@ -48,10 +49,29 @@ export default function App() {
   const [seats, setSeats] = useState({});
   const [selectedTripId, setSelectedTripId] = useState(null);
   const [authUserId, setAuthUserId] = useState(null);
+  const [toast, setToast] = useState(null);
   const [userId, setUserId] = useState(() => {
     const s = localStorage.getItem("userId");
     return s ? Number(s) : null;
   });
+
+  const notify = (message, type = "info") => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+
+    const nextToast = {
+      id: Date.now(),
+      message,
+      type,
+    };
+
+    setToast(nextToast);
+    toastTimerRef.current = setTimeout(() => {
+      setToast((current) => (current?.id === nextToast.id ? null : current));
+      toastTimerRef.current = null;
+    }, 3500);
+  };
 
   const computeTripIdFromSelection = () => {
     const dest = localStorage.getItem("dest") || "FP";
@@ -91,7 +111,9 @@ export default function App() {
         setPage("location");
       }
 
-      if (msg.type === "SIGN_IN_FAIL") alert("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+      if (msg.type === "SIGN_IN_FAIL") {
+        notify("อีเมลหรือรหัสผ่านไม่ถูกต้อง", "error");
+      }
       if (msg.type === "HELLO_OK") setConnected(true);
       if (msg.type === "HELLO_FAIL") console.log("HELLO_FAIL:", msg.code);
     };
@@ -111,6 +133,14 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!window.tcp) return;
     if (page !== "seat") return;
 
@@ -126,11 +156,13 @@ export default function App() {
 
   const pages = {
     signin: <Signin goNext={() => goTo("location")}
+              notify={notify}
               goSignup={() => goTo("signup")}
               goForget={() => goTo("forgetpass")}/>,
     signup: <Signup goNext={() => goTo("signin")} 
+              notify={notify}
               goBack={() => goTo("signin")}/>,
-    forgetpass: <Forgetpass goBack={() => goTo("signin")} />,
+    forgetpass: <Forgetpass goBack={() => goTo("signin")} notify={notify} />,
     location: <Location goNext={() => goTo("time")} />,
     time: <Time goBack={() => goTo("location")} goNext={() => goTo("seat")} />,
     seat: (
@@ -140,9 +172,19 @@ export default function App() {
         tripId={selectedTripId}
         userId={userId}
         tcpRequest={tcpRequest}
+        notify={notify}
       />
     ),
   };
 
-  return pages[page] || <div>Page not found</div>;
+  return (
+    <>
+      {pages[page] || <div>Page not found</div>}
+      {toast && (
+        <div className={`app-toast app-toast--${toast.type}`} role="status" aria-live="polite">
+          {toast.message}
+        </div>
+      )}
+    </>
+  );
 }

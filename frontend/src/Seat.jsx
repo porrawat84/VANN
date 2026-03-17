@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import "./cssSeat.css";
 import bg from "./assets/image/background.png";
 
-export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
+export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify }) {
   const [selected, setSelected] = useState([]);
   const holdTokensRef = useRef({}); // seatId -> holdToken
   const [showSummary, setShowSummary] = useState(false);
@@ -20,7 +20,7 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
 
   const toggleSeat = (seatId) => {
     if (!tripId) {
-      alert("ยังโหลดรอบรถไม่เสร็จ ลองรอสักครู่");
+      notify?.("ยังโหลดรอบรถไม่เสร็จ ลองรอสักครู่", "error");
       return;
     }
     if (isReserved(seatId)) return;
@@ -32,11 +32,11 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
 
   const handleConfirm = async () => {
     if (!tripId) {
-      alert("ยังโหลดรอบรถไม่เสร็จ ลองรอสักครู่แล้วเข้าหน้านี้ใหม่");
+      notify?.("ยังโหลดรอบรถไม่เสร็จ ลองรอสักครู่แล้วเข้าหน้านี้ใหม่", "error");
       return;
     }
     if (!userId || Number.isNaN(Number(userId))) {
-      alert("กรุณาเข้าสู่ระบบก่อนจองที่นั่ง");
+      notify?.("กรุณาเข้าสู่ระบบก่อนจองที่นั่ง", "error");
       return;
     }
 
@@ -50,7 +50,7 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
         const holdMsg = await tcpRequest({ type:"HOLD", tripId, seat: seatId, userId: Number(userId) });
 
         if (holdMsg.type !== "HOLD_OK") {
-          alert(`HOLD ไม่สำเร็จ: ${holdMsg.code || holdMsg.message}`);
+          notify?.(`HOLD ไม่สำเร็จ: ${holdMsg.code || holdMsg.message}`, "error");
           await tcpRequest({ type: "LIST_SEATS", tripId });
           return;
         }
@@ -64,19 +64,19 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
         const confirmMsg = await tcpRequest({ type:"CONFIRM", tripId, holdToken: holdTokensRef.current[seatId], userId: Number(userId) });
 
         if (confirmMsg.type !== "CONFIRM_OK") {
-          alert(`CONFIRM ไม่สำเร็จ: ${confirmMsg.code || confirmMsg.message}`);
+          notify?.(`CONFIRM ไม่สำเร็จ: ${confirmMsg.code || confirmMsg.message}`, "error");
           await tcpRequest({ type: "LIST_SEATS", tripId });
           return;
         }
       }
 
-      alert(`จองสำเร็จ ✅ (${selected.join(", ")})`);
+      notify?.(`จองสำเร็จ (${selected.join(", ")})`, "success");
       setSelected([]);
       holdTokensRef.current = {};
       tcpSend({ type: "LIST_SEATS", tripId });
     } catch (e) {
       console.error(e);
-      alert("เชื่อมต่อช้า/timeout ลองใหม่อีกครั้ง");
+      notify?.("เชื่อมต่อช้า/timeout ลองใหม่อีกครั้ง", "error");
       tcpSend({ type: "LIST_SEATS", tripId });
     }
   };

@@ -2,7 +2,7 @@ import { useState } from "react";
 import "./cssForgetpass.css";
 import bg from "./assets/image/background.png";
 
-export default function ForgetPassword({ goBack }) {
+export default function ForgetPassword({ goBack, notify }) {
     //  สร้าง State สำหรับเก็บ Email
     const [email, setEmail] = useState("");
 
@@ -11,17 +11,17 @@ export default function ForgetPassword({ goBack }) {
         const cleanEmail = email.trim();
         
         if (!cleanEmail) {
-            alert("กรุณากรอกอีเมลของคุณ");
+            notify?.("กรุณากรอกอีเมลของคุณ", "error");
             return;
         }
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(cleanEmail)) {
-            alert("รูปแบบอีเมลไม่ถูกต้อง");
+            notify?.("รูปแบบอีเมลไม่ถูกต้อง", "error");
             return;
         }
 
-        alert(`ระบบได้ส่งลิงก์รีเซ็ตรหัสผ่านไปที่: ${cleanEmail}`);
+        notify?.(`ระบบได้ส่งลิงก์รีเซ็ตรหัสผ่านไปที่: ${cleanEmail}`, "success");
     };
 
     return (

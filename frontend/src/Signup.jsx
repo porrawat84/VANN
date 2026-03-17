@@ -3,7 +3,7 @@ import "./cssSignup.css";
 import logo from "./assets/image/logo.png";
 import bg from "./assets/image/background.png";
 
-export default function Signup({ goBack }) {
+export default function Signup({ goBack, notify }) {
 
     // Check ข้อมูลในกล่องข้อความinput
     //1. สร้าง State สำหรับเก็บข้อมูลทุกช่อง
@@ -48,12 +48,12 @@ export default function Signup({ goBack }) {
 
     const handleSignup = () => {
             if (!isFormValid()) {
-                alert("กรุณากรอกข้อมูลให้ครบถ้วน อีเมลถูกต้อง และรหัสผ่านตรงกัน");
+                notify?.("กรุณากรอกข้อมูลให้ครบถ้วน อีเมลถูกต้อง และรหัสผ่านตรงกัน", "error");
                 return;
             }
 
             if (!window.tcp) {
-                alert("TCP ยังไม่พร้อม (Electron preload ไม่เจอ window.tcp)");
+                notify?.("TCP ยังไม่พร้อม (Electron preload ไม่เจอ window.tcp)", "error");
                 return;
             }
 

@@ -4,7 +4,7 @@ import "./cssSignin.css";
 import logo from "./assets/image/logo.png";
 import bg from "./assets/image/background.png";
 
-export default function Signin({  goSignup, goForget }) {
+export default function Signin({  goSignup, goForget, notify }) {
 
     // สร้าง State สำหรับเก็บ Email และ Password
     const [formData, setFormData] = useState({
@@ -41,12 +41,12 @@ export default function Signin({  goSignup, goForget }) {
 
     const handleLogin = () => {
         if (!isFormValid()) {
-            alert("กรุณากรอกอีเมลและรหัสผ่านให้ถูกต้อง");
+            notify?.("กรุณากรอกอีเมลและรหัสผ่านให้ถูกต้อง", "error");
             return;
         }
 
         if (!window.tcp) {
-            alert("TCP ยังไม่พร้อม (Electron preload ไม่เจอ window.tcp)");
+            notify?.("TCP ยังไม่พร้อม (Electron preload ไม่เจอ window.tcp)", "error");
             return;
         }
 
