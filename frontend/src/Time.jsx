@@ -7,11 +7,11 @@ const TIME_OPTIONS = [
   { label: "10:00 am", hhmm: "1000" },
   { label: "11:00 am", hhmm: "1100" },
   { label: "12:00 pm", hhmm: "1200" },
-  { label: "1:00 pm",  hhmm: "1300" },
-  { label: "2:00 pm",  hhmm: "1400" },
-  { label: "3:00 pm",  hhmm: "1500" },
-  { label: "4:00 pm",  hhmm: "1600" },
-  { label: "5:00 pm",  hhmm: "1700" },
+  { label: "1:00 pm", hhmm: "1300" },
+  { label: "2:00 pm", hhmm: "1400" },
+  { label: "3:00 pm", hhmm: "1500" },
+  { label: "4:00 pm", hhmm: "1600" },
+  { label: "5:00 pm", hhmm: "1700" },
 ];
 
 function bangkokNow() {
@@ -56,7 +56,12 @@ function Time({ goBack, goNext }) {
   const CLOSE_BEFORE_MIN = 1;
 
   return (
-    <div className="app" style={{ backgroundImage: `url(${bg})` }}>
+    <div className="app" style={{
+      backgroundImage: `url(${bg})`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat"
+    }}>
       <button className="back-fixed" onClick={goBack}>←</button>
 
       <div className="content time">

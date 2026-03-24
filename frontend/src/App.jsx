@@ -6,6 +6,10 @@ import Time from "./Time";
 import Seat from "./Seat";
 import Forgetpass from "./Forgetpass";
 
+import AdminSignin from "./Admin/Signin";
+import AdminLocation from "./Admin/Location";
+import Dataseat from "./Admin/Dataseat";
+
 function bangkokYMD() {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Bangkok",
@@ -155,13 +159,15 @@ export default function App() {
   const goTo = (nextPage) => setPage(nextPage);
 
   const pages = {
-    signin: <Signin goNext={() => goTo("location")}
-              notify={notify}
-              goSignup={() => goTo("signup")}
-              goForget={() => goTo("forgetpass")}/>,
-    signup: <Signup goNext={() => goTo("signin")} 
-              notify={notify}
-              goBack={() => goTo("signin")}/>,
+    signin: <Signin notify={notify}
+      goSignup={() => goTo("signup")}
+      goForget={() => goTo("forgetpass")}
+      goLocation={() => goTo("location")}
+      goAdmin={() => goTo("admin")} />,
+
+    signup: <Signup goNext={() => goTo("signin")}
+      notify={notify}
+      goBack={() => goTo("signin")} />,
     forgetpass: <Forgetpass goBack={() => goTo("signin")} notify={notify} />,
     location: <Location goNext={() => goTo("time")} />,
     time: <Time goBack={() => goTo("location")} goNext={() => goTo("seat")} />,
@@ -175,6 +181,12 @@ export default function App() {
         notify={notify}
       />
     ),
+    
+    //Admin
+    admin: <AdminSignin goPage={goTo} />,
+    adminLocation: <AdminLocation goPage={goTo} />,
+    dataseat: <Dataseat goPage={goTo} />,
+
   };
 
   return (

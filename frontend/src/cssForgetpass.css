@@ -2,6 +2,7 @@
 .forget-app {
     justify-content: flex-start; /* ดันเนื้อหาขึ้นไปด้านบน */
     padding-top: 60px;
+    margin: 0 auto; /* จัดให้อยู่กลางหน้าจอ */
 }
 
 /* ===== ส่วน Header (ลูกศร + ข้อความ) ===== */
@@ -9,8 +10,9 @@
     display: flex;
     align-items: center;
     width: 300px; /* ให้กว้างเท่ากล่องเหลือง */
-    margin-bottom: 20px;
     position: relative;
+    margin: 0 auto; /* จัดให้อยู่กลางหน้าจอ */
+
 }
 
 .back-btn {
@@ -47,13 +49,13 @@
     text-align: center;
     font-size: 28px;
     font-weight: 900;
-    margin: 30px;
+    margin-top: 70px;
     color: #000000;
 }
 
 /* ===== กล่องเหลือง (ปรับการจัดวางข้างใน) ===== */
 .forget-box {
-    width: 300px;
+    width: 350px;
     background-color: #FFF9B6;
 
     padding: 18px;
@@ -67,11 +69,13 @@
     box-shadow: 0 12px 25px rgba(0,0,0,0.25);
     align-items: center;
     margin-top: -30px;
+    margin: 0 auto; /* จัดให้อยู่กลางหน้าจอ */
+
 }
 
 /* ===== ข้อความอธิบาย ===== */
 .instruction-text {
-    font-size: 12px;
+    font-size: 14px;
     text-align: center;
     margin-top: 10px;
     margin-bottom: 5px;
@@ -83,7 +87,7 @@
     height: 40px;
     width: 100%;
     border: 1px solid black !important; 
-    margin-bottom: 15px;
+    margin-bottom: 5px;
     margin-top: 0px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important; 
     border-radius: 20px;
@@ -96,10 +100,10 @@
     border: 1px solid black;
     cursor: pointer;
     font-family: 'Grandstander', cursive;
-    font-size: 18px;
+    font-size: 13px;
     color: black;
     background-color: #FFC4C4;
-    padding: 0 30px;
+    padding: 10px;
     box-shadow: 1px 4px 6px rgba(0,0,0,0.3); 
 
     

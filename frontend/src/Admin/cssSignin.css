@@ -1,0 +1,75 @@
+.app {
+    width: 100%;
+    max-width: 420px;   /* จำกัดไม่ให้ใหญ่เกิน */
+    padding: 30px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+.signin-box {
+    width: 320px;
+    background-color: #CEEBFF;
+    padding: 30px 20px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    margin: 0 auto;
+}
+
+.logo {
+    display: block;
+    width: 80%;
+    margin-bottom: 10px;
+    margin: 0 auto;
+}
+
+.signin-box h2 {
+    display: block;
+
+
+}
+
+.sub {
+    margin-bottom: 20px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+label {
+    margin-top: 10px;
+    margin-bottom: 5px;
+    font-size: 16px;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 20px;
+    border: none;
+    margin-bottom: 10px;
+    outline: none;
+}
+
+button {
+    margin: 20px auto 0;
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: none;
+    width: 50%;
+    background-color: #f4df7a;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 3px 3px #878787;
+}
+
+button:active {
+    transform: translateY(2px);
+    box-shadow: none;
+}

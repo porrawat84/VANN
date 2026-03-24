@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import "./cssSeat.css";
 import bg from "./assets/image/background.png";
 
-export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify }) {
+export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
   const [selected, setSelected] = useState([]);
-  const holdTokensRef = useRef({}); // seatId -> holdToken
+  const holdTokensRef = useRef({});
   const [showSummary, setShowSummary] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bookingData, setBookingData] = useState(null);
 
   const tcpSend = (packet) => {
     if (!window.tcp) return;
@@ -19,65 +19,72 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
   };
 
   const toggleSeat = (seatId) => {
-    if (!tripId) {
-      notify?.("ยังโหลดรอบรถไม่เสร็จ ลองรอสักครู่", "error");
-      return;
-    }
+    if (!tripId) return alert("ยังโหลดรอบรถไม่เสร็จ");
     if (isReserved(seatId)) return;
 
     setSelected((prev) =>
-      prev.includes(seatId) ? prev.filter((s) => s !== seatId) : [...prev, seatId]
+      prev.includes(seatId)
+        ? prev.filter((s) => s !== seatId)
+        : [...prev, seatId]
     );
   };
 
   const handleConfirm = async () => {
-    if (!tripId) {
-      notify?.("ยังโหลดรอบรถไม่เสร็จ ลองรอสักครู่แล้วเข้าหน้านี้ใหม่", "error");
-      return;
-    }
-    if (!userId || Number.isNaN(Number(userId))) {
-      notify?.("กรุณาเข้าสู่ระบบก่อนจองที่นั่ง", "error");
-      return;
-    }
-
+    if (!tripId) return alert("ยังโหลดรอบรถไม่เสร็จ");
+    if (!userId) return alert("กรุณาเข้าสู่ระบบ");
     if (selected.length === 0) return;
 
-    console.log("BOOKING tripId =", tripId, "selected =", selected);
-
     try {
-      // 1) HOLD ทีละที่นั่ง (รอผลของ seat นั้นจริงๆ)
+      // HOLD
       for (const seatId of selected) {
-        const holdMsg = await tcpRequest({ type:"HOLD", tripId, seat: seatId, userId: Number(userId) });
+        const holdMsg = await tcpRequest({
+          type: "HOLD",
+          tripId,
+          seat: seatId,
+          userId: Number(userId),
+        });
 
         if (holdMsg.type !== "HOLD_OK") {
-          notify?.(`HOLD ไม่สำเร็จ: ${holdMsg.code || holdMsg.message}`, "error");
-          await tcpRequest({ type: "LIST_SEATS", tripId });
+          alert("HOLD ไม่สำเร็จ");
           return;
         }
         holdTokensRef.current[seatId] = holdMsg.holdToken;
       }
 
-      // 2) CONFIRM ทีละที่นั่ง (รอให้ตรง seat ด้วย)
+      // CONFIRM
       for (const seatId of selected) {
-        const holdToken = holdTokensRef.current[seatId];
-
-        const confirmMsg = await tcpRequest({ type:"CONFIRM", tripId, holdToken: holdTokensRef.current[seatId], userId: Number(userId) });
+        const confirmMsg = await tcpRequest({
+          type: "CONFIRM",
+          tripId,
+          holdToken: holdTokensRef.current[seatId],
+          userId: Number(userId),
+        });
 
         if (confirmMsg.type !== "CONFIRM_OK") {
-          notify?.(`CONFIRM ไม่สำเร็จ: ${confirmMsg.code || confirmMsg.message}`, "error");
-          await tcpRequest({ type: "LIST_SEATS", tripId });
+          alert("CONFIRM ไม่สำเร็จ");
           return;
         }
       }
 
-      notify?.(`จองสำเร็จ (${selected.join(", ")})`, "success");
-      setSelected([]);
-      holdTokensRef.current = {};
+      // ✅ clone array กัน state เพี้ยน
+      const seatsCopy = [...selected];
+
+      setBookingData({
+        username: userId,
+        seats: seatsCopy,
+        time: "11:00 am",
+        phone: "099-999-9999",
+        destination: "future park rangsit",
+        price: seatsCopy.length * 20,
+      });
+
+      setShowSummary(true);
+
       tcpSend({ type: "LIST_SEATS", tripId });
+
     } catch (e) {
       console.error(e);
-      notify?.("เชื่อมต่อช้า/timeout ลองใหม่อีกครั้ง", "error");
-      tcpSend({ type: "LIST_SEATS", tripId });
+      alert("เชื่อมต่อผิดพลาด");
     }
   };
 
@@ -89,24 +96,34 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
       <div
         className={`seat ${reserved ? "reserved" : ""} ${chosen ? "selected" : ""}`}
         onClick={() => toggleSeat(num)}
-        title={seats?.[num] || "UNKNOWN"}
       >
         {num}
       </div>
     );
   };
 
+  const closeModal = () => {
+    setShowSummary(false);
+    setSelected([]);
+    holdTokensRef.current = {};
+  };
+
   return (
-    <div className="app" style={{ backgroundImage: `url(${bg})` }}>
+    <div className="app" style={{
+      backgroundImage: `url(${bg})`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat"
+    }}>
       <button className="back-btn" onClick={goBack}>←</button>
 
       <div className="seat-card">
         <h2>Choose Seat</h2>
 
         <div className="legend">
-          <div className="seat example"> Available</div>
-          <div className="seat example selected"> Selected</div>
-          <div className="seat example reserved"> Reserved</div>
+          <div className="seat example">Available</div>
+          <div className="seat example selected">Selected</div>
+          <div className="seat example reserved">Reserved</div>
         </div>
 
         <div className="bus">
@@ -146,14 +163,32 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
           </div>
         </div>
 
-        <button className="confirm" onClick={handleConfirm} disabled={!tripId}>
+        <button className="confirm" onClick={handleConfirm}>
           Confirm ({selected.length})
         </button>
-
-        <div style={{ marginTop: 10, fontSize: 12 }}>
-          tripId: {tripId || "(loading...)"}
-        </div>
       </div>
+
+      {/* 🔥 MODAL */}
+      {showSummary && bookingData && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <button className="close" onClick={closeModal}>✕</button>
+
+            <h2>information</h2>
+
+            <p><b>username :</b> {bookingData.username}</p>
+            <p><b>seat :</b> {bookingData.seats.join(", ")}</p>
+            <p><b>time :</b> {bookingData.time}</p>
+            <p><b>phone :</b> {bookingData.phone}</p>
+            <p><b>destination :</b> {bookingData.destination}</p>
+            <p><b>price :</b> {bookingData.price} baht</p>
+
+            <button className="confirm-btn" onClick={closeModal}>
+              confirm
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+} 

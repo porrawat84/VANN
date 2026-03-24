@@ -1,10 +1,11 @@
 
-import { useState} from "react";
+import { useState } from "react";
 import "./cssSignin.css";
 import logo from "./assets/image/logo.png";
 import bg from "./assets/image/background.png";
 
-export default function Signin({  goSignup, goForget, notify }) {
+
+export default function Signin({ goSignup, goForget, notify, goLocation, goAdmin }) {
 
     // สร้าง State สำหรับเก็บ Email และ Password
     const [formData, setFormData] = useState({
@@ -25,7 +26,7 @@ export default function Signin({  goSignup, goForget, notify }) {
         const { email, password } = formData;
         const cleanEmail = email.trim();
 
-        
+
         if (!cleanEmail || !password) {
             return false;
         }
@@ -36,7 +37,7 @@ export default function Signin({  goSignup, goForget, notify }) {
             return false;
         }
 
-        return true; 
+        return true;
     };
 
     const handleLogin = () => {
@@ -45,29 +46,40 @@ export default function Signin({  goSignup, goForget, notify }) {
             return;
         }
 
-        if (!window.tcp) {
-            notify?.("TCP ยังไม่พร้อม (Electron preload ไม่เจอ window.tcp)", "error");
-            return;
+        // 🟢 ถ้าเป็น Electron (มี TCP)
+        if (window.tcp) {
+            window.tcp.send({
+                type: "SIGN_IN",
+                email: formData.email.trim(),
+                password: formData.password
+            });
         }
 
-        window.tcp.send({
-            type: "SIGN_IN",
-            email: formData.email.trim(),
-            password: formData.password
-        });
+        // 🔵 ถ้าเป็น browser (ตอนนี้ของเธอ)
+        else {
+            console.log("Mock login");
+
+            // 👇 ใส่อันนี้ = ไปหน้า home ได้เลย
+            goLocation();
+        }
     };
 
 
 
 
     return (
-        <div className="app" style={{ backgroundImage: `url(${bg})` }}>
+        <div className="app" style={{
+            backgroundImage: `url(${bg})`, 
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            
+        }}>
             <img src={logo} className="signin-logo" alt="logo" />
 
             <div className="boxyellow">
                 <label>email :</label>
                 {/* เติม name, value, onChange ให้ input ผูกกับ State */}
-                <input 
+                <input
                     className="input"
                     type="email"
                     id="email"
@@ -86,17 +98,18 @@ export default function Signin({  goSignup, goForget, notify }) {
                     onChange={handleChange}
                 />
 
-            <div className="signin-btn-group">
-                <button className="btn signin-purple" onClick={goSignup}>
-                sign up
-                </button>
-                <button className="btn signin-blue" onClick={handleLogin}>
-                sign in
-                </button></div>
+                <div className="signin-btn-group">
+                    <button className="btn signin-purple" onClick={goSignup}>
+                        sign up
+                    </button>
+                    <button className="btn signin-blue" onClick={handleLogin}>
+                        sign in
+                    </button></div>
 
-            <p className="forgot" onClick={goForget}>forget password?</p>
+                <p className="forgot" onClick={goForget}>forget password?</p>
             </div>
+            <p className="admin" onClick={goAdmin}> Admin Login</p>
 
         </div>
-        );
-    }
+    );
+}

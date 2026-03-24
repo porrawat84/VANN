@@ -10,12 +10,13 @@
   width: 340px;
   background: rgba(255, 255, 255, 0.25); /* 👈 ใส */
   backdrop-filter: blur(10px);   
-  padding: 25px;
+  padding: 10px 20px 20px 20px;
   border-radius: 40px;
   text-align: center;
   box-shadow: 0 10px 20px rgba(0,0,0,0.3);
   color:#111;
   position: relative;
+  margin: 40px 20px;
 }
 .legend {
   display: flex;
@@ -91,7 +92,7 @@
 
 .seat.selected {
   background: #fff4b0;
-box-shadow: 0 4px 0 #e6d85c;
+box-shadow: 0 4px 3px #cbc063;
 }
 .seat.reserved {
   background: #ddd;
@@ -138,4 +139,78 @@ box-shadow: 0 4px 0 #e6d85c;
 }
 .back-btn:hover {
   transform: scale(1.1);
+}
+
+/*popup*/
+/* overlay มืด + blur */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+/* กล่อง modal */
+.modal {
+  display: block;
+  width: 300px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border-radius: 30px;
+  padding: 20px;
+  box-shadow: 0 15px 30px rgba(0,0,0,0.25);
+  position: relative;
+  text-align: left;
+  color: #111;
+
+  margin: 0 20px;
+
+}
+
+/* ปุ่ม X */
+.modal .close {
+  position: absolute;
+  top: 10px;
+  left: 15px;
+  font-size: 18px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+/* หัวข้อ */
+.modal h2 {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+/* text */
+.modal p {
+  margin: 6px 0;
+  font-size: 15px;
+}
+
+/* ปุ่ม confirm */
+.confirm-btn {
+  margin-top: 15px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid #111;
+  background: #cbb8ff;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #a995e6;
+  transition: 0.2s;
+}
+
+.confirm-btn:hover {
+  transform: scale(1.05);
 }

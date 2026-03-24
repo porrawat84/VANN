@@ -47,28 +47,33 @@ export default function Signup({ goBack, notify }) {
     };
 
     const handleSignup = () => {
-            if (!isFormValid()) {
-                notify?.("กรุณากรอกข้อมูลให้ครบถ้วน อีเมลถูกต้อง และรหัสผ่านตรงกัน", "error");
-                return;
-            }
+        if (!isFormValid()) {
+            notify?.("กรุณากรอกข้อมูลให้ครบถ้วน อีเมลถูกต้อง และรหัสผ่านตรงกัน", "error");
+            return;
+        }
 
-            if (!window.tcp) {
-                notify?.("TCP ยังไม่พร้อม (Electron preload ไม่เจอ window.tcp)", "error");
-                return;
-            }
+        if (!window.tcp) {
+            notify?.("TCP ยังไม่พร้อม (Electron preload ไม่เจอ window.tcp)", "error");
+            return;
+        }
 
-            window.tcp.send({
-                type: "SIGN_UP",
-                name: formData.username.trim(),
-                email: formData.email.trim(),
-                phone: formData.phone.trim(),
-                password: formData.password
-            });
-        };
+        window.tcp.send({
+            type: "SIGN_UP",
+            name: formData.username.trim(),
+            email: formData.email.trim(),
+            phone: formData.phone.trim(),
+            password: formData.password
+        });
+    };
 
 
     return (
-        <div className="app" style={{ backgroundImage: `url(${bg})` }}>
+        <div className="app" style={{
+            backgroundImage: `url(${bg})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat"
+        }}>
             <btn className="back-btn" onClick={goBack}>←</btn>
             <img src={logo} className="signup-logo" alt="logo" />
 
@@ -90,7 +95,7 @@ export default function Signup({ goBack, notify }) {
                 <label>confirm password :</label>
                 <input className="input" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} />
                 <button className="btn signup-purple" onClick={handleSignup}
-    
+
                 >
                     sign up
                 </button>

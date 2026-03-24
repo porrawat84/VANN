@@ -6,12 +6,12 @@
 body {
     margin: 0;
     min-height: 100vh;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
     padding: 20px; /* กันชิดขอบมือถือ */
+
+    background-image: url("/src/assets/image/background.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 
@@ -20,19 +20,22 @@ body {
     width: 100%;
     max-width: 420px;   /* จำกัดไม่ให้ใหญ่เกิน */
     padding: 30px;
-
-    display: flex;
+    
     flex-direction: column;
     align-items: center;
     justify-content: center;
+
+    margin: 0 auto;
 }
 
 
 /* ===== โลโก้ ===== */
 .signin-logo {
+    display: block;
     width: 80%;
     max-width: 280px;
-    margin-bottom: 25px;
+    margin-bottom: 1px;
+    margin: 0 auto;
 }
 
 
@@ -107,6 +110,14 @@ label {
     font-size: 13px;
     text-align: right;
     margin-top: 8px;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.admin{
+    font-size: 13px;
+    text-align:  left;
+    margin-bottom: 0px;
     text-decoration: underline;
     cursor: pointer;
 }

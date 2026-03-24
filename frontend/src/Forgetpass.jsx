@@ -9,7 +9,7 @@ export default function ForgetPassword({ goBack, notify }) {
     // ฟังก์ชันตรวจสอบและส่งอีเมล
     const handleSendEmail = () => {
         const cleanEmail = email.trim();
-        
+
         if (!cleanEmail) {
             notify?.("กรุณากรอกอีเมลของคุณ", "error");
             return;
@@ -25,7 +25,12 @@ export default function ForgetPassword({ goBack, notify }) {
     };
 
     return (
-        <div className="app forget-app" style={{ backgroundImage: `url(${bg})` }}>
+        <div className="app forget-app" style={{
+            backgroundImage: `url(${bg})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat"
+        }}>
             <btn className="back-btn" onClick={goBack}>←</btn>
             <div className="forget-header">
                 <h1 className="title-text">forget password</h1>
@@ -36,10 +41,10 @@ export default function ForgetPassword({ goBack, notify }) {
                 <p className="instruction-text">
                     Enter your email account for reset password
                 </p>
-                
-                <input 
-                    className="input forget-input" 
-                    type="email" 
+
+                <input
+                    className="input forget-input"
+                    type="email"
                     name="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
