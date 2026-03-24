@@ -72,7 +72,7 @@ export default function Signin({ goSignup, goForget, notify, goLocation, goAdmin
             backgroundImage: `url(${bg})`, 
             backgroundSize: "cover",
             backgroundPosition: "center",
-            
+            backgroundRepeat: "no-repeat"
         }}>
             <img src={logo} className="signin-logo" alt="logo" />
 
