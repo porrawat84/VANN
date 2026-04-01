@@ -64,9 +64,9 @@ function createWindow() {
   });
 
   //run dev
-  win.loadURL("http://localhost:5173");
+  //win.loadURL("http://localhost:5173");
   //run build
-  //win.loadFile(path.join(__dirname, "..", "frontend", "dist", "index.html"));
+  win.loadFile(path.join(__dirname, "..", "frontend", "dist", "index.html"));
 }
 
 app.whenReady().then(() => {
