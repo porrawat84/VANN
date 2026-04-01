@@ -237,14 +237,16 @@ const server = net.createServer((socket) => {
         // ---- booking
         if (msg.type === "CREATE_BOOKING") {
           if (actorUserId == null) {
-            send(socket, { type: "ERROR", code: "AUTH_REQUIRED" });
+            reply({ type: "ERROR", code: "AUTH_REQUIRED" });
             continue;
           }
+
           const open = isBookingOpen(msg.tripId);
           if (!open.ok) {
-            send(socket, { type: "ERROR", code: open.code });
+            reply({ type: "ERROR", code: open.code });
             continue;
           }
+
           const totalPriceSatang = Math.round(Number(msg.totalPriceBaht) * 100);
           const r = await createBooking({
             userId: actorUserId,
@@ -252,8 +254,20 @@ const server = net.createServer((socket) => {
             seats: msg.seats,
             totalPriceSatang,
           });
-          send(socket, { type: "CREATE_BOOKING_OK", bookingId: r.bookingId, status: r.status, amount: totalPriceSatang });
-          broadcastToUser(actorUserId, { type: "EVENT_BOOKING", bookingId: r.bookingId, status: r.status });
+
+          reply({
+            type: "CREATE_BOOKING_OK",
+            bookingId: r.bookingId,
+            status: r.status,
+            amount: totalPriceSatang,
+          });
+
+          broadcastToUser(actorUserId, {
+            type: "EVENT_BOOKING",
+            bookingId: r.bookingId,
+            status: r.status,
+          });
+
           continue;
         }
 
@@ -269,22 +283,22 @@ const server = net.createServer((socket) => {
 
         if (msg.type === "GET_BOOKING_DETAIL") {
           if (actorUserId == null) {
-            send(socket, { type: "ERROR", code: "AUTH_REQUIRED" });
+            reply({ type: "ERROR", code: "AUTH_REQUIRED" });
             continue;
           }
 
           const detail = await getBookingDetail(msg.bookingId);
           if (!detail) {
-            send(socket, { type: "ERROR", code: "NO_BOOKING" });
+            reply({ type: "ERROR", code: "NO_BOOKING" });
             continue;
           }
 
           if (clientInfo.role !== "ADMIN" && Number(detail.user_id) !== Number(actorUserId)) {
-            send(socket, { type: "ERROR", code: "FORBIDDEN" });
+            reply({ type: "ERROR", code: "FORBIDDEN" });
             continue;
           }
 
-          send(socket, { type: "BOOKING_DETAIL", detail });
+          reply({ type: "BOOKING_DETAIL", detail });
           continue;
         }
         // ---- auth
@@ -349,39 +363,81 @@ const server = net.createServer((socket) => {
 
         // ---- payment (HTTPS to Opn, but internal comm stays TCP)
         if (msg.type === "PAYMENT_CREATE_PROMPTPAY") {
-          const r = await createPromptPayPayment({ bookingId: msg.bookingId });
-          if (!r.ok) {
-            send(socket, { type: "PAYMENT_FAIL", code: r.code });
+          try {
+            console.log("PAYMENT_CREATE_PROMPTPAY bookingId =", msg.bookingId);
+
+            const r = await createPromptPayPayment({ bookingId: msg.bookingId });
+            console.log("PAYMENT RESULT =", r);
+
+            if (!r.ok) {
+              reply({ type: "PAYMENT_FAIL", code: r.code });
+              continue;
+            }
+
+            reply({
+              type: "PAYMENT_QR",
+              bookingId: r.bookingId,
+              paymentId: r.paymentId,
+              amount: r.amount,
+              qrUri: r.qrUri,
+            });
+
+            broadcastToUser(r.userId, {
+              type: "EVENT_PAYMENT",
+              bookingId: r.bookingId,
+              status: "PENDING",
+              amount: r.amount,
+              qrUri: r.qrUri,
+            });
+
+            startPollingCharge({
+              chargeId: r.chargeId,
+              bookingId: r.bookingId,
+              paymentId: r.paymentId,
+              onPaid: () => {
+                broadcastToUser(r.userId, {
+                  type: "EVENT_PAYMENT",
+                  bookingId: r.bookingId,
+                  status: "PAID",
+                  amount: r.amount,
+                });
+                broadcastToAdmins({
+                  type: "EVENT_PAYMENT",
+                  bookingId: r.bookingId,
+                  status: "PAID",
+                  amount: r.amount,
+                  userId: r.userId,
+                });
+              },
+              onFail: (reason) => {
+                broadcastToUser(r.userId, {
+                  type: "EVENT_PAYMENT",
+                  bookingId: r.bookingId,
+                  status: reason,
+                  amount: r.amount,
+                });
+              },
+            });
+
+            continue;
+          } catch (e) {
+            console.error("PAYMENT_CREATE_PROMPTPAY ERROR =", e);
+            reply({
+              type: "ERROR",
+              code: "SERVER_ERROR",
+              message: e.message,
+            });
             continue;
           }
-
-          // ส่ง QR กลับไป
-          send(socket, { type: "PAYMENT_QR", bookingId: r.bookingId, paymentId: r.paymentId, amount: r.amount, qrUri: r.qrUri });
-
-          // realtime push ให้ user ด้วย (เผื่อหลายหน้าต่าง)
-          broadcastToUser(r.userId, { type: "EVENT_PAYMENT", bookingId: r.bookingId, status: "PENDING", amount: r.amount, qrUri: r.qrUri });
-
-          // เริ่ม polling อัตโนมัติ
-          startPollingCharge({
-            chargeId: r.chargeId,
-            bookingId: r.bookingId,
-            paymentId: r.paymentId,
-            onPaid: () => {
-              broadcastToUser(r.userId, { type: "EVENT_PAYMENT", bookingId: r.bookingId, status: "PAID", amount: r.amount });
-              broadcastToAdmins({ type: "EVENT_PAYMENT", bookingId: r.bookingId, status: "PAID", amount: r.amount, userId: r.userId });
-              broadcastToTrip(r.tripId, { type: "EVENT_BOOKING", bookingId: r.bookingId, status: "CONFIRMED" });
-            },
-            onFail: (reason) => {
-              broadcastToUser(r.userId, { type: "EVENT_PAYMENT", bookingId: r.bookingId, status: reason, amount: r.amount });
-            },
-          });
-
-          continue;
         }
 
         send(socket, { type: "ERROR", code: "UNKNOWN_TYPE" });
       } catch (e) {
-        send(socket, { type: "ERROR", code: "SERVER_ERROR", message: e.message });
+          reply({
+            type: "ERROR",
+            code: "SERVER_ERROR",
+            message: e.message,
+          });
       }
     }
   });

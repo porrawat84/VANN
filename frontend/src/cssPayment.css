@@ -1,0 +1,79 @@
+.payment-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.18);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.payment-card {
+  width: 270px;
+  background: #f4f4f4;
+  border: 2px solid #444;
+  border-radius: 24px;
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.18);
+  padding: 16px 16px 22px;
+  position: relative;
+  text-align: center;
+}
+
+.payment-close {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  border: none;
+  background: transparent;
+  font-size: 34px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.payment-logo {
+  display: inline-block;
+  margin-top: 18px;
+  margin-bottom: 12px;
+  padding: 2px 8px;
+  border: 1px solid #777;
+  background: #fff;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.payment-qr-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.payment-qr {
+  width: 170px;
+  height: 170px;
+  object-fit: contain;
+  background: #fff;
+}
+
+.payment-qr-placeholder {
+  width: 170px;
+  height: 170px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 2px dashed #999;
+  background: #fff;
+  color: #555;
+}
+
+.payment-info {
+  text-align: left;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #111;
+}
+
+.payment-pending {
+  margin-top: 16px;
+  font-size: 15px;
+  font-weight: 700;
+}
