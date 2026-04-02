@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import "./cssSignin.css";
 import logo from "./assets/image/logo.png";
@@ -40,27 +39,45 @@ export default function Signin({ goSignup, goForget, notify, goLocation, goAdmin
         return true;
     };
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         if (!isFormValid()) {
             notify?.("กรุณากรอกอีเมลและรหัสผ่านให้ถูกต้อง", "error");
             return;
         }
 
-        // 🟢 ถ้าเป็น Electron (มี TCP)
-        if (window.tcp) {
-            window.tcp.send({
-                type: "SIGN_IN",
-                email: formData.email.trim(),
-                password: formData.password
+        try {
+            const res = await fetch("http://localhost:3000/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    email: formData.email.trim(),
+                    password: formData.password
+                })
             });
-        }
 
-        // 🔵 ถ้าเป็น browser (ตอนนี้ของเธอ)
-        else {
-            console.log("Mock login");
+            const data = await res.json();
 
-            // 👇 ใส่อันนี้ = ไปหน้า home ได้เลย
-            goLocation();
+            if (!data.ok) {
+                notify?.("อีเมลหรือรหัสผ่านไม่ถูกต้อง", "error");
+                return;
+            }
+
+            // เก็บ user
+            localStorage.setItem("userId", data.userId);
+            localStorage.setItem("role", data.role);
+
+            // ✅ เช็ค role
+            if (data.role === "ADMIN") {
+                goAdmin();      // ไปหน้า admin
+            } else {
+                goLocation();   // ไปหน้า user ปกติ
+            }
+
+        } catch (err) {
+            console.error(err);
+            notify?.("เชื่อมต่อ server ไม่ได้", "error");
         }
     };
 
@@ -69,7 +86,7 @@ export default function Signin({ goSignup, goForget, notify, goLocation, goAdmin
 
     return (
         <div className="app" style={{
-            backgroundImage: `url(${bg})`, 
+            backgroundImage: `url(${bg})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat"
@@ -104,11 +121,11 @@ export default function Signin({ goSignup, goForget, notify, goLocation, goAdmin
                     </button>
                     <button className="btn signin-blue" onClick={handleLogin}>
                         sign in
-                    </button></div>
+                    </button>
+                </div>
 
                 <p className="forgot" onClick={goForget}>forget password?</p>
             </div>
-            <p className="admin" onClick={goAdmin}> Admin Login</p>
 
         </div>
     );
