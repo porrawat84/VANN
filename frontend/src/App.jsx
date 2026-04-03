@@ -6,6 +6,7 @@ import Time from "./Time";
 import Seat from "./Seat";
 import Forgetpass from "./Forgetpass";
 
+import AdminHome from "./Admin/Home";
 import AdminSignin from "./Admin/Signin";
 import AdminLocation from "./Admin/Location";
 import Dataseat from "./Admin/Dataseat";
@@ -184,6 +185,7 @@ export default function App() {
     
     //Admin
     admin: <AdminSignin goPage={goTo} />,
+    adminHome: <AdminHome goPage={goTo} />,
     adminLocation: <AdminLocation goPage={goTo} />,
     dataseat: <Dataseat goPage={goTo} />,
 

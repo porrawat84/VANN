@@ -4,7 +4,7 @@ import logo from "./assets/image/logo.png";
 import bg from "./assets/image/background.png";
 
 
-export default function SignIn({ goPage }) {
+export default function AdminSignin({ goPage }) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
@@ -13,7 +13,7 @@ export default function SignIn({ goPage }) {
         console.log("Email:", email);
         console.log("Password:", password);
         // TODO: เชื่อม backend login
-        goPage("adminLocation");
+        goPage("adminHome");
     };
 
     return (

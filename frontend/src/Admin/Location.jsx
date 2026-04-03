@@ -1,10 +1,38 @@
-import { useState } from "react";
+import { useState , useEffect} from "react";
 import "./Location.css";
 import BottomNav from "./BottomNav";
 
+
 export default function AdminLocation({ goPage }) {
+
+    const dest = localStorage.getItem("dest");
+
+    const locationMap = {
+        FP: "Future Park Rangsit",
+        MC: "Mo Chit",
+        VM: "Victory Monument"
+    };
+
     const locations = ["Future Park Rangsit", "Mo Chit", "Victory Monument"];
-    const [selectedLocation, setSelectedLocation] = useState(locations[0]);
+
+    const [selectedLocation, setSelectedLocation] = useState(
+        locationMap[dest] || locations[0]
+    );
+
+    useEffect(() => {
+        const dest = localStorage.getItem("dest");
+
+        const locationMap = {
+            FP: "Future Park Rangsit",
+            MC: "Mo Chit",
+            VM: "Victory Monument"
+        };
+
+        if (dest && locationMap[dest]) {
+            setSelectedLocation(locationMap[dest]);
+        }
+    }, []);
+
 
     const timeSlots = [
         { time: "10:00 am", available: 8 },
@@ -23,7 +51,9 @@ export default function AdminLocation({ goPage }) {
 
             {/* top bar */}
             <div className="top-bar">
-                <button className="back-btn">←</button>
+                <button className="back-btn" onClick={() => goPage("adminHome")}>
+                    ←
+                </button>
 
                 <select
                     className="location-filter"
@@ -40,7 +70,7 @@ export default function AdminLocation({ goPage }) {
             <div className="card">
                 {timeSlots.map((slot, index) => (
                     <button key={index} 
-                    className="slot-btn" 
+                    className="slot-btn"
                     onClick={() => goPage("dataseat")}
                     >
                         <span>{slot.time}</span>

@@ -1,13 +1,13 @@
 .app {
     width: 100%;
     max-width: 420px;
-    /* จำกัดไม่ให้ใหญ่เกิน */
-    padding: 30px;
-    display: block;
-    justify-content: center;
-    background:#F0F0F0;
+    margin: 0 auto;
+
     height: 100vh;
-    overflow-y: auto;
+    position: relative;
+
+    background: #F0F0F0;
+    overflow: hidden;
 }
 
 .phone-frame {
@@ -73,8 +73,9 @@
     margin: 0 auto;
     padding: 5px 20px 20px 20px;
     box-shadow: 0px 3px 4px rgb(56, 56, 56);
-
-
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 90px;
 }
 
 /* slot */
@@ -112,12 +113,4 @@
 .badge.full {
     background: #dddddd;
     color: #666;
-}
-
-
-
-.profile {
-    background: white;
-    padding: 10px;
-    border-radius: 100%;
 }
