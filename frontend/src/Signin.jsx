@@ -2,7 +2,7 @@ import { useState } from "react";
 import "./cssSignin.css";
 import logo from "./assets/image/logo.png";
 import bg from "./assets/image/background.png";
-
+import { useEffect } from "react";
 
 export default function Signin({ goSignup, goForget, notify, goLocation, goAdmin }) {
 
@@ -11,6 +11,31 @@ export default function Signin({ goSignup, goForget, notify, goLocation, goAdmin
         email: "",
         password: ""
     });
+
+    useEffect(() => {
+        if (!window.tcp?.onMessage) return;
+
+        const handler = (msg) => {
+            if (msg.type === "SIGN_IN_OK") {
+                localStorage.setItem("userId", msg.userId);
+                localStorage.setItem("role", msg.role);
+
+                if (msg.role === "ADMIN") {
+                    goAdmin();
+                } else {
+                    goLocation();
+                }
+            }
+
+            if (msg.type === "SIGN_IN_FAIL") {
+                notify?.("อีเมลหรือรหัสผ่านไม่ถูกต้อง", "error");
+            }
+        };
+
+        const unsubscribe = window.tcp.onMessage(handler);
+
+        return () => unsubscribe();
+    }, [goAdmin, goLocation, notify]);
 
     // ฟังก์ชันจับการเปลี่ยนแปลงเวลาผู้ใช้พิมพ์
     const handleChange = (e) => {
@@ -39,47 +64,31 @@ export default function Signin({ goSignup, goForget, notify, goLocation, goAdmin
         return true;
     };
 
-    const handleLogin = async () => {
+    const handleLogin = () => {
         if (!isFormValid()) {
             notify?.("กรุณากรอกอีเมลและรหัสผ่านให้ถูกต้อง", "error");
             return;
         }
 
-        try {
-            const res = await fetch("http://localhost:3000/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    email: formData.email.trim(),
-                    password: formData.password
-                })
+        // 🟢 ถ้าเป็น Electron (มี TCP)
+        if (window.tcp) {
+            window.tcp.send({
+                type: "SIGN_IN",
+                email: formData.email.trim(),
+                password: formData.password
             });
+        }
 
-            const data = await res.json();
+        // 🔵 ถ้าเป็น browser (ตอนนี้ของเธอ)
+        else {
+            console.log("Mock login");
 
-            if (!data.ok) {
-                notify?.("อีเมลหรือรหัสผ่านไม่ถูกต้อง", "error");
-                return;
-            }
-
-            // เก็บ user
-            localStorage.setItem("userId", data.userId);
-            localStorage.setItem("role", data.role);
-
-            // ✅ เช็ค role
-            if (data.role === "ADMIN") {
-                goAdmin();      // ไปหน้า admin
-            } else {
-                goLocation();   // ไปหน้า user ปกติ
-            }
-
-        } catch (err) {
-            console.error(err);
-            notify?.("เชื่อมต่อ server ไม่ได้", "error");
+            // 👇 ใส่อันนี้ = ไปหน้า home ได้เลย
+            goLocation();
         }
     };
+
+
 
 
 
