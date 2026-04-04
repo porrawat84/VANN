@@ -4,7 +4,7 @@ require("dotenv").config();
 const { listSeats, holdSeat, confirmSeat, releaseExpiredHolds } = require("./seatService");
 const { createBooking, getBookings, getBookingDetail } = require("./bookingService");
 const { sendChat, getChatHistory } = require("./chatService");
-const { createPromptPayPayment, startPollingCharge } = require("./paymentService");
+const { createManualPromptPayQR, submitPaymentSlip, getPendingPayments, approvePayment, rejectPayment} = require("./paymentService");
 const { isBookingOpen } = require("./tripUtil");
 const { registerUser, loginUser, getUserRole } = require("./authService");
 const { DESTS, TIMES, bangkokNow, makeTripId } = require("./tripUtil");
@@ -256,6 +256,7 @@ const server = net.createServer((socket) => {
             tripId: msg.tripId,
             seats: msg.seats,
             totalPriceSatang,
+            holdTokens: msg.holdTokens || {},
           });
 
           reply({
@@ -364,83 +365,140 @@ const server = net.createServer((socket) => {
           continue;
         }
 
-        // ---- payment (HTTPS to Opn, but internal comm stays TCP)
         if (msg.type === "PAYMENT_CREATE_PROMPTPAY") {
-          try {
-            console.log("PAYMENT_CREATE_PROMPTPAY bookingId =", msg.bookingId);
-
-            const r = await createPromptPayPayment({ bookingId: msg.bookingId });
-            console.log("PAYMENT RESULT =", r);
-
-            if (!r.ok) {
-              reply({ type: "PAYMENT_FAIL", code: r.code });
-              continue;
-            }
-
-            reply({
-              type: "PAYMENT_QR",
-              bookingId: r.bookingId,
-              paymentId: r.paymentId,
-              amount: r.amount,
-              qrUri: r.qrUri,
-            });
-
-            broadcastToUser(r.userId, {
-              type: "EVENT_PAYMENT",
-              bookingId: r.bookingId,
-              status: "PENDING",
-              amount: r.amount,
-              qrUri: r.qrUri,
-            });
-
-            startPollingCharge({
-              chargeId: r.chargeId,
-              bookingId: r.bookingId,
-              paymentId: r.paymentId,
-              onPaid: () => {
-                broadcastToUser(r.userId, {
-                  type: "EVENT_PAYMENT",
-                  bookingId: r.bookingId,
-                  status: "PAID",
-                  amount: r.amount,
-                });
-                broadcastToAdmins({
-                  type: "EVENT_PAYMENT",
-                  bookingId: r.bookingId,
-                  status: "PAID",
-                  amount: r.amount,
-                  userId: r.userId,
-                });
-              },
-              onFail: (reason) => {
-                broadcastToUser(r.userId, {
-                  type: "EVENT_PAYMENT",
-                  bookingId: r.bookingId,
-                  status: reason,
-                  amount: r.amount,
-                });
-              },
-            });
-
-            continue;
-          } catch (e) {
-            console.error("PAYMENT_CREATE_PROMPTPAY ERROR =", e);
-            reply({
-              type: "ERROR",
-              code: "SERVER_ERROR",
-              message: e.message,
-            });
+          if (actorUserId == null) {
+            reply({ type: "ERROR", code: "AUTH_REQUIRED" });
             continue;
           }
+
+          const r = await createManualPromptPayQR({
+            bookingId: msg.bookingId,
+            userId: actorUserId,
+          });
+
+          if (!r.ok) {
+            reply({ type: "PAYMENT_FAIL", code: r.code });
+            continue;
+          }
+
+          reply({
+            type: "PAYMENT_QR",
+            bookingId: r.bookingId,
+            amountBaht: r.amountBaht,
+            qrUri: r.qrUri,
+          });
+
+          continue;
+        }
+
+        if (msg.type === "SUBMIT_PAYMENT_SLIP") {
+          if (actorUserId == null) {
+            reply({ type: "ERROR", code: "AUTH_REQUIRED" });
+            continue;
+          }
+
+          const r = await submitPaymentSlip({
+            bookingId: msg.bookingId,
+            userId: actorUserId,
+            transferredAt: msg.transferredAt,
+            slipBase64: msg.slipBase64,
+            slipFileName: msg.slipFileName,
+          });
+
+          if (!r.ok) {
+            reply({ type: "SUBMIT_PAYMENT_SLIP_FAIL", code: r.code });
+            continue;
+          }
+
+          reply({
+            type: "SUBMIT_PAYMENT_SLIP_OK",
+            bookingId: msg.bookingId,
+            paymentId: r.paymentId,
+            slipImagePath: r.slipImagePath,
+          });
+
+          broadcastToAdmins({
+            type: "EVENT_PAYMENT_VERIFY_REQUIRED",
+            bookingId: msg.bookingId,
+          });
+
+          continue;
+        }
+
+        if (msg.type === "ADMIN_GET_PENDING_PAYMENTS") {
+          if (clientInfo.role !== "ADMIN") {
+            reply({ type: "ERROR", code: "FORBIDDEN" });
+            continue;
+          }
+
+          const rows = await getPendingPayments();
+          reply({ type: "PENDING_PAYMENTS", payments: rows });
+          continue;
+        }
+
+        if (msg.type === "ADMIN_APPROVE_PAYMENT") {
+          if (clientInfo.role !== "ADMIN") {
+            reply({ type: "ERROR", code: "FORBIDDEN" });
+            continue;
+          }
+
+          const r = await approvePayment({
+            bookingId: msg.bookingId,
+            adminUserId: actorUserId,
+          });
+
+          if (!r.ok) {
+            reply({ type: "ADMIN_APPROVE_PAYMENT_FAIL", code: r.code });
+            continue;
+          }
+
+          reply({ type: "ADMIN_APPROVE_PAYMENT_OK", bookingId: msg.bookingId });
+          continue;
+        }
+
+        if (msg.type === "ADMIN_REJECT_PAYMENT") {
+          if (clientInfo.role !== "ADMIN") {
+            reply({ type: "ERROR", code: "FORBIDDEN" });
+            continue;
+          }
+
+          const r = await rejectPayment({
+            bookingId: msg.bookingId,
+            adminUserId: actorUserId,
+            reason: msg.reason,
+          });
+
+          if (!r.ok) {
+            reply({ type: "ADMIN_REJECT_PAYMENT_FAIL", code: r.code });
+            continue;
+          }
+
+          const detail = await getBookingDetail(msg.bookingId);
+          if (detail?.user_id) {
+            broadcastToUser(detail.user_id, {
+              type: "EVENT_PAYMENT",
+              bookingId: msg.bookingId,
+              status: "REJECTED",
+            });
+          }
+
+          broadcastToAdmins({
+            type: "EVENT_PAYMENT",
+            bookingId: msg.bookingId,
+            status: "REJECTED",
+          });
+
+          reply({ type: "ADMIN_REJECT_PAYMENT_OK", bookingId: msg.bookingId });
+          continue;
         }
 
         send(socket, { type: "ERROR", code: "UNKNOWN_TYPE" });
       } catch (e) {
-          reply({
-            type: "ERROR",
-            code: "SERVER_ERROR",
-            message: e.message,
-          });
+        send(socket, {
+          type: "ERROR",
+          code: "SERVER_ERROR",
+          message: e.message,
+        });
       }
     }
   });

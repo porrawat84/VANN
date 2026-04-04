@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import "./cssSeat.css";
 import "./cssPayment.css";
 import bg from "./assets/image/background.png";
-import Payment from "./Payment";
 
 function getSeatPrice(dest) {
   if (dest === "FP") return 20;
@@ -32,15 +31,26 @@ function getTimeLabel(hhmm) {
   return map[hhmm] || hhmm || "-";
 }
 
+function formatCountdown(sec) {
+  const mm = String(Math.floor(sec / 60)).padStart(2, "0");
+  const ss = String(sec % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
+}
+
 export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
   const [selected, setSelected] = useState([]);
   const [showSummary, setShowSummary] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [bookingData, setBookingData] = useState(null);
-  const [creatingPayment, setCreatingPayment] = useState(false);
-  const [paymentQrUri, setPaymentQrUri] = useState("");
-  const [paymentAmountBaht, setPaymentAmountBaht] = useState(0);
+  const [creatingBooking, setCreatingBooking] = useState(false);
+
   const [paymentSecondsLeft, setPaymentSecondsLeft] = useState(600);
+  const [currentBookingId, setCurrentBookingId] = useState(null);
+
+  const [transferTime, setTransferTime] = useState("");
+  const [slipFile, setSlipFile] = useState(null);
+  const [slipPreview, setSlipPreview] = useState("");
+  const [submittingSlip, setSubmittingSlip] = useState(false);
 
   const holdTokensRef = useRef({});
   const paymentTimerRef = useRef(null);
@@ -102,8 +112,11 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
     if (!bookingData) return;
 
     try {
-      setCreatingPayment(true);
+      setCreatingBooking(true);
 
+      holdTokensRef.current = {};
+
+      // HOLD อย่างเดียว ยังไม่ CONFIRM
       for (const seatId of bookingData.seats) {
         const holdMsg = await tcpRequest({
           type: "HOLD",
@@ -120,25 +133,13 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
         holdTokensRef.current[seatId] = holdMsg.holdToken;
       }
 
-      for (const seatId of bookingData.seats) {
-        const confirmMsg = await tcpRequest({
-          type: "CONFIRM",
-          tripId: bookingData.tripId,
-          holdToken: holdTokensRef.current[seatId],
-          userId: Number(userId),
-        });
-
-        if (confirmMsg.type !== "CONFIRM_OK") {
-          alert(`CONFIRM ไม่สำเร็จ: ${seatId}`);
-          return;
-        }
-      }
-
+      // CREATE_BOOKING ให้เป็น PENDING_PAYMENT
       const bookingRes = await tcpRequest({
         type: "CREATE_BOOKING",
         tripId: bookingData.tripId,
         seats: bookingData.seats,
         totalPriceBaht: bookingData.price,
+        holdTokens: holdTokensRef.current,
         userId: Number(userId),
       });
 
@@ -154,12 +155,12 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
       });
 
       if (paymentRes.type !== "PAYMENT_QR") {
-        alert("สร้าง QR payment ไม่สำเร็จ");
+        alert(paymentRes.code || "สร้าง QR payment ไม่สำเร็จ");
         return;
       }
 
       setPaymentQrUri(paymentRes.qrUri || "");
-      setPaymentAmountBaht(bookingData.price);
+      setCurrentBookingId(bookingRes.bookingId);
       setShowSummary(false);
       setShowPayment(true);
       setPaymentSecondsLeft(600);
@@ -180,7 +181,70 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
       console.error(e);
       alert("เชื่อมต่อผิดพลาด");
     } finally {
-      setCreatingPayment(false);
+      setCreatingBooking(false);
+    }
+  };
+
+  const handleSlipChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSlipFile(file);
+
+    const previewUrl = URL.createObjectURL(file);
+    setSlipPreview(previewUrl);
+  };
+
+  const fileToBase64 = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleSubmitSlip = async () => {
+    if (!currentBookingId) {
+      alert("ไม่พบ booking");
+      return;
+    }
+
+    if (!transferTime) {
+      alert("กรุณากรอกเวลาที่โอน");
+      return;
+    }
+
+    if (!slipFile) {
+      alert("กรุณาแนบสลิป");
+      return;
+    }
+
+    try {
+      setSubmittingSlip(true);
+
+      const slipBase64 = await fileToBase64(slipFile);
+
+      const res = await tcpRequest({
+        type: "SUBMIT_PAYMENT_SLIP",
+        bookingId: currentBookingId,
+        transferredAt: transferTime,
+        slipBase64,
+        slipFileName: slipFile.name,
+        userId: Number(userId),
+      });
+
+      if (res.type !== "SUBMIT_PAYMENT_SLIP_OK") {
+        alert(res.code || "ส่งสลิปไม่สำเร็จ");
+        return;
+      }
+
+      alert("ส่งสลิปเรียบร้อย รอแอดมินตรวจสอบ");
+      closePayment();
+    } catch (e) {
+      console.error(e);
+      alert("ส่งสลิปไม่สำเร็จ");
+    } finally {
+      setSubmittingSlip(false);
     }
   };
 
@@ -192,6 +256,10 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
     setShowPayment(false);
     setSelected([]);
     setBookingData(null);
+    setCurrentBookingId(null);
+    setTransferTime("");
+    setSlipFile(null);
+    setSlipPreview("");
     holdTokensRef.current = {};
 
     if (paymentTimerRef.current) {
@@ -205,8 +273,11 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
       if (paymentTimerRef.current) {
         clearInterval(paymentTimerRef.current);
       }
+      if (slipPreview) {
+        URL.revokeObjectURL(slipPreview);
+      }
     };
-  }, []);
+  }, [slipPreview]);
 
   const SeatBox = ({ num }) => {
     const reserved = isReserved(num);
@@ -299,25 +370,92 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
             <p><b>destination :</b> {bookingData.destination}</p>
             <p><b>price :</b> {bookingData.price} baht</p>
 
-            <button className="confirm-btn" onClick={handleSummaryConfirm} disabled={creatingPayment}>
-              {creatingPayment ? "loading..." : "confirm"}
+            <button
+              className="confirm-btn"
+              onClick={handleSummaryConfirm}
+              disabled={creatingBooking}
+            >
+              {creatingBooking ? "loading..." : "confirm"}
             </button>
           </div>
         </div>
       )}
 
-      <Payment
-        open={showPayment}
-        onClose={closePayment}
-        qrUri={paymentQrUri}
-        amountBaht={paymentAmountBaht}
-        secondsLeft={paymentSecondsLeft}
-        seats={bookingData?.seats || []}
-        dest={bookingData?.dest || dest}
-        hhmm={bookingData?.hhmm || hhmm}
-        username={bookingData?.username || username}
-        phone={bookingData?.phone || phone}
-      />
+      {showPayment && bookingData && (
+        <div className="payment-overlay">
+          <div className="payment-card">
+            <button className="payment-close" onClick={closePayment}>×</button>
+
+            <div className="payment-logo">PromptPay</div>
+
+            <div className="payment-qr-wrap">
+              {paymentQrUri ? (
+                <img src={paymentQrUri} alt="PromptPay QR" className="payment-qr" />
+              ) : (
+                <div className="payment-qr-placeholder">loading...</div>
+              )}
+            </div>
+
+            <div className="payment-info">
+              <p><b>username :</b> {bookingData.username}</p>
+              <p><b>seat :</b> {bookingData.seats.join(", ")}</p>
+              <p><b>time :</b> {bookingData.time}</p>
+              <p><b>phone :</b> {bookingData.phone}</p>
+              <p><b>destination :</b> {bookingData.destination}</p>
+              <p><b>price :</b> {bookingData.price} baht</p>
+            </div>
+
+            <p className="payment-pending">
+              payment pending {formatCountdown(paymentSecondsLeft)}
+            </p>
+
+            <div style={{ marginTop: "12px", textAlign: "left" }}>
+              <label style={{ display: "block", marginBottom: "6px" }}>
+                transfer time
+              </label>
+              <input
+                type="datetime-local"
+                value={transferTime}
+                onChange={(e) => setTransferTime(e.target.value)}
+                style={{ width: "100%", marginBottom: "10px" }}
+              />
+
+              <label style={{ display: "block", marginBottom: "6px" }}>
+                upload slip
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleSlipChange}
+                style={{ width: "100%", marginBottom: "10px" }}
+              />
+
+              {slipPreview && (
+                <img
+                  src={slipPreview}
+                  alt="slip preview"
+                  style={{
+                    width: "100%",
+                    maxHeight: "180px",
+                    objectFit: "contain",
+                    borderRadius: "12px",
+                    marginBottom: "10px",
+                    background: "#fff",
+                  }}
+                />
+              )}
+            </div>
+
+            <button
+              className="payment-confirm-btn"
+              onClick={handleSubmitSlip}
+              disabled={submittingSlip}
+            >
+              {submittingSlip ? "submitting..." : "payment confirm"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

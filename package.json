@@ -1,5 +1,9 @@
 {
   "devDependencies": {
     "electron": "^40.8.3"
+  },
+  "dependencies": {
+    "promptpay-qr": "^0.5.0",
+    "qrcode": "^1.5.4"
   }
 }
