@@ -7,7 +7,6 @@ import Seat from "./Seat";
 import Forgetpass from "./Forgetpass";
 
 import AdminHome from "./Admin/Home";
-import AdminSignin from "./Admin/Signin";
 import AdminLocation from "./Admin/Location";
 import Dataseat from "./Admin/Dataseat";
 
@@ -90,8 +89,14 @@ export default function App() {
     return `${bangkokYMD()}_${dest}_${hhmm}`;
   };
 
+  const didInit = useRef(false);
+  const didHello = useRef(false);
+
   useEffect(() => {
     if (!window.tcp) return;
+
+    if (didInit.current) return;
+    didInit.current = true;
 
     window.tcp.offAllMessages?.();
 
@@ -108,12 +113,20 @@ export default function App() {
       if (msg.type === "SIGN_IN_OK" || msg.type === "SIGN_UP_OK") {
         const id = Number(msg.userId);
         setUserId(id);
+
         localStorage.setItem("userId", String(id));
         localStorage.setItem("role", msg.role || "USER");
 
-        window.tcp.send({ type: "HELLO", userId: id, role: "USER" });
+        if (!didHello.current) {
+          didHello.current = true;
+          window.tcp.send({ type: "HELLO", userId: id, role: msg.role || "USER" });
+        }
 
-        setPage("location");
+        if (msg.role === "ADMIN") {
+          setPage("admin");
+        } else {
+          setPage("location");
+        }
       }
 
       if (msg.type === "SIGN_IN_FAIL") {
@@ -130,8 +143,10 @@ export default function App() {
     // ถ้ามี userId ค้างไว้ ค่อย HELLO
     const stored = localStorage.getItem("userId");
     const uid = stored ? Number(stored) : null;
-    if (Number.isFinite(uid)) {
-      window.tcp.send({ type: "HELLO", userId: uid, role: "USER" });
+    if (Number.isFinite(uid) && !didHello.current) {
+      didHello.current = true;
+      const role = localStorage.getItem("role") || "USER";
+      window.tcp.send({ type: "HELLO", userId: uid, role });
     }
 
     return () => unsubscribe?.();
@@ -169,9 +184,13 @@ export default function App() {
     signup: <Signup goNext={() => goTo("signin")}
       notify={notify}
       goBack={() => goTo("signin")} />,
+
     forgetpass: <Forgetpass goBack={() => goTo("signin")} notify={notify} />,
+
     location: <Location goNext={() => goTo("time")} />,
+
     time: <Time goBack={() => goTo("location")} goNext={() => goTo("seat")} />,
+
     seat: (
       <Seat
         goBack={() => goTo("time")}
@@ -182,10 +201,9 @@ export default function App() {
         notify={notify}
       />
     ),
-    
+
     //Admin
-    admin: <AdminSignin goPage={goTo} />,
-    adminHome: <AdminHome goPage={goTo} />,
+    admin: <AdminHome goPage={goTo} />,
     adminLocation: <AdminLocation goPage={goTo} />,
     dataseat: <Dataseat goPage={goTo} />,
 
