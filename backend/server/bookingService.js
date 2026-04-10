@@ -1,15 +1,15 @@
 const { pool } = require("./db");
 
-async function createBooking({ userId, tripId, seats, totalPriceSatang }) {
+async function createBooking({ userId, tripId, seats, totalPriceSatang, holdTokens}) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
-    const b = await client.query(
-      `INSERT INTO booking(user_id, trip_id, total_price, status)
-       VALUES ($1,$2,$3,'PENDING_PAYMENT')
-       RETURNING booking_id, status`,
-      [userId, tripId, totalPriceSatang]
+    const bookingIns = await client.query(
+      `INSERT INTO booking (user_id, trip_id, total_price, status, hold_tokens_json)
+      VALUES ($1, $2, $3, 'PENDING_PAYMENT', $4)
+      RETURNING booking_id, status`,
+      [userId, tripId, totalPriceSatang, holdTokens ? JSON.stringify(holdTokens) : null]
     );
     const bookingId = b.rows[0].booking_id;
 

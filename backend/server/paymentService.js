@@ -1,115 +1,329 @@
 require("dotenv").config();
+const fs = require("fs");
+const path = require("path");
+const generatePayload = require("promptpay-qr");
+const QRCode = require("qrcode");
 const { pool } = require("./db");
+const { confirmSeat } = require("./seatService");
 
-const omise = require("omise")({ secretKey: process.env.OMISE_SECRET_KEY });
+const PROMPTPAY_ID = "0813131998";
 
-const POLL_MS = Number(process.env.PAYMENT_POLL_INTERVAL_MS || 3000);
-const TIMEOUT_MS = Number(process.env.PAYMENT_TIMEOUT_MS || 300000);
+function ensureUploadDir() {
+  const dir = path.join(__dirname, "uploads", "slips");
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
 
-// เก็บงาน polling ที่กำลังทำอยู่ (กันซ้ำ)
-const activePolls = new Map(); // chargeId -> timeoutId/intervalId
-
-async function createPromptPayPayment({ bookingId }) {
-  // 1) อ่าน booking
-  const b = await pool.query(
+async function createManualPromptPayQR({ bookingId, userId }) {
+  const { rows } = await pool.query(
     `SELECT booking_id, user_id, total_price, status
-     FROM booking WHERE booking_id=$1`,
+     FROM booking
+     WHERE booking_id = $1`,
     [bookingId]
   );
-  if (b.rows.length === 0) return { ok: false, code: "NO_BOOKING" };
-  const booking = b.rows[0];
-  if (booking.status !== "PENDING_PAYMENT") return { ok: false, code: "BAD_BOOKING_STATUS" };
 
-  const amount = Number(booking.total_price); // satang
+  if (rows.length === 0) return { ok: false, code: "NO_BOOKING" };
 
-  // 2) สร้าง source + charge ผ่าน HTTPS (Opn)
-  const source = await omise.sources.create({ type: "promptpay", amount, currency: "THB" });
-  const charge = await omise.charges.create({
-    amount,
-    currency: "THB",
-    source: source.id,
-    description: `VANN booking #${bookingId}`,
-    metadata: { booking_id: String(bookingId) },
-  });
+  const booking = rows[0];
 
-  const qrUri = charge?.source?.scannable_code?.image?.download_uri || null;
-  if (!qrUri) return { ok: false, code: "NO_QR" };
+  if (Number(booking.user_id) !== Number(userId)) {
+    return { ok: false, code: "FORBIDDEN" };
+  }
 
-  // 3) บันทึก payment
-  const ins = await pool.query(
-    `INSERT INTO payment(booking_id, amount, status, omise_charge_id, qr_download_uri)
-     VALUES ($1,$2,'PENDING',$3,$4)
-     RETURNING payment_id`,
-    [bookingId, amount, charge.id, qrUri]
-  );
+  if (booking.status !== "PENDING_PAYMENT") {
+    return { ok: false, code: "BAD_BOOKING_STATUS" };
+  }
+
+  const amountBaht = Number(booking.total_price) / 100;
+  const payload = generatePayload(PROMPTPAY_ID, { amount: amountBaht });
+  const qrDataUrl = await QRCode.toDataURL(payload);
 
   return {
     ok: true,
-    paymentId: ins.rows[0].payment_id,
     bookingId,
-    userId: booking.user_id,
-    amount,
-    chargeId: charge.id,
-    qrUri,
+    amountBaht,
+    qrUri: qrDataUrl,
   };
 }
 
-function startPollingCharge({ chargeId, bookingId, paymentId, onPaid, onFail }) {
-  if (activePolls.has(chargeId)) return; // กันซ้ำ
+async function submitPaymentSlip({
+  bookingId,
+  userId,
+  transferredAt,
+  slipBase64,
+  slipFileName,
+}) {
+  const client = await pool.connect();
 
-  const startedAt = Date.now();
+  try {
+    await client.query("BEGIN");
 
-  const intervalId = setInterval(async () => {
-    try {
-      const charge = await omise.charges.retrieve(chargeId);
+    const b = await client.query(
+      `SELECT booking_id, user_id, trip_id, status, total_price
+       FROM booking
+       WHERE booking_id = $1
+       FOR UPDATE`,
+      [bookingId]
+    );
 
-      const isPaid = charge?.paid === true || charge?.status === "successful";
-      const isFailed = charge?.status === "failed" || charge?.failure_code;
-
-      if (isPaid) {
-        clearInterval(intervalId);
-        activePolls.delete(chargeId);
-
-        // update DB: payment + booking
-        const client = await pool.connect();
-        try {
-          await client.query("BEGIN");
-          await client.query(
-            `UPDATE payment SET status='PAID', paid_at=NOW() WHERE payment_id=$1`,
-            [paymentId]
-          );
-          await client.query(
-            `UPDATE booking SET status='CONFIRMED' WHERE booking_id=$1`,
-            [bookingId]
-          );
-          await client.query("COMMIT");
-        } catch (e) {
-          await client.query("ROLLBACK");
-          throw e;
-        } finally {
-          client.release();
-        }
-
-        onPaid?.();
-      } else if (isFailed) {
-        clearInterval(intervalId);
-        activePolls.delete(chargeId);
-
-        await pool.query(`UPDATE payment SET status='FAILED' WHERE payment_id=$1`, [paymentId]);
-        onFail?.("FAILED");
-      } else if (Date.now() - startedAt > TIMEOUT_MS) {
-        clearInterval(intervalId);
-        activePolls.delete(chargeId);
-
-        await pool.query(`UPDATE payment SET status='EXPIRED' WHERE payment_id=$1`, [paymentId]);
-        onFail?.("EXPIRED");
-      }
-    } catch (e) {
-      // ไม่หยุด polling ทันที แค่ข้ามรอบ
+    if (b.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return { ok: false, code: "NO_BOOKING" };
     }
-  }, POLL_MS);
 
-  activePolls.set(chargeId, intervalId);
+    const booking = b.rows[0];
+
+    if (Number(booking.user_id) !== Number(userId)) {
+      await client.query("ROLLBACK");
+      return { ok: false, code: "FORBIDDEN" };
+    }
+
+    if (booking.status !== "PENDING_PAYMENT") {
+      await client.query("ROLLBACK");
+      return { ok: false, code: "BAD_BOOKING_STATUS" };
+    }
+
+    if (!slipBase64) {
+      await client.query("ROLLBACK");
+      return { ok: false, code: "NO_SLIP" };
+    }
+
+    const uploadsDir = ensureUploadDir();
+    const ext = path.extname(slipFileName || "").toLowerCase() || ".png";
+    const safeExt = [".png", ".jpg", ".jpeg", ".webp"].includes(ext) ? ext : ".png";
+    const fileName = `booking_${bookingId}_${Date.now()}${safeExt}`;
+    const filePath = path.join(uploadsDir, fileName);
+
+    const pureBase64 = slipBase64.includes(",")
+      ? slipBase64.split(",")[1]
+      : slipBase64;
+
+    fs.writeFileSync(filePath, Buffer.from(pureBase64, "base64"));
+
+    const existing = await client.query(
+      `SELECT payment_id
+       FROM payment
+       WHERE booking_id = $1
+       LIMIT 1`,
+      [bookingId]
+    );
+
+    let paymentId;
+
+    if (existing.rows.length > 0) {
+      paymentId = existing.rows[0].payment_id;
+
+      await client.query(
+        `UPDATE payment
+         SET amount = $2,
+             status = 'WAITING_VERIFY',
+             transferred_at = $3,
+             submitted_at = NOW(),
+             slip_image_path = $4,
+             reviewed_at = NULL,
+             reviewed_by = NULL,
+             reject_reason = NULL
+         WHERE payment_id = $1`,
+        [paymentId, booking.total_price, transferredAt, filePath]
+      );
+    } else {
+      const ins = await client.query(
+        `INSERT INTO payment
+         (booking_id, amount, status, transferred_at, submitted_at, slip_image_path)
+         VALUES ($1, $2, 'WAITING_VERIFY', $3, NOW(), $4)
+         RETURNING payment_id`,
+        [bookingId, booking.total_price, transferredAt, filePath]
+      );
+
+      paymentId = ins.rows[0].payment_id;
+    }
+
+    await client.query(
+      `UPDATE booking
+       SET status = 'WAITING_VERIFY'
+       WHERE booking_id = $1`,
+      [bookingId]
+    );
+
+    await client.query("COMMIT");
+    return { ok: true, paymentId, slipImagePath: filePath };
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
 }
 
-module.exports = { createPromptPayPayment, startPollingCharge };
+async function getPendingPayments() {
+  const { rows } = await pool.query(
+    `SELECT
+       p.payment_id,
+       p.booking_id,
+       p.amount,
+       p.status AS payment_status,
+       p.transferred_at,
+       p.submitted_at,
+       p.slip_image_path,
+       p.reject_reason,
+       b.user_id,
+       b.trip_id,
+       b.status AS booking_status,
+       b.hold_tokens_json,
+       u.name,
+       u.phone,
+       u.email
+     FROM payment p
+     JOIN booking b ON b.booking_id = p.booking_id
+     JOIN app_user u ON u.user_id = b.user_id
+     WHERE p.status = 'WAITING_VERIFY'
+     ORDER BY p.submitted_at ASC`
+  );
+
+  return rows;
+}
+
+async function approvePayment({ bookingId, adminUserId }) {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const b = await client.query(
+      `SELECT booking_id, user_id, trip_id, status, hold_tokens_json
+       FROM booking
+       WHERE booking_id = $1
+       FOR UPDATE`,
+      [bookingId]
+    );
+
+    if (b.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return { ok: false, code: "NO_BOOKING" };
+    }
+
+    const booking = b.rows[0];
+
+    if (booking.status !== "WAITING_VERIFY") {
+      await client.query("ROLLBACK");
+      return { ok: false, code: "BAD_BOOKING_STATUS" };
+    }
+
+    const holdTokens = booking.hold_tokens_json || {};
+
+    for (const seatId of Object.keys(holdTokens)) {
+      const holdToken = holdTokens[seatId];
+      const r = await confirmSeat(booking.trip_id, holdToken, booking.user_id);
+
+      if (!r.ok) {
+        await client.query("ROLLBACK");
+        return { ok: false, code: `CONFIRM_FAIL_${seatId}_${r.code}` };
+      }
+    }
+
+    await client.query(
+      `UPDATE payment
+       SET status = 'APPROVED',
+           reviewed_at = NOW(),
+           reviewed_by = $2,
+           reject_reason = NULL,
+           paid_at = NOW()
+       WHERE booking_id = $1`,
+      [bookingId, adminUserId]
+    );
+
+    await client.query(
+      `UPDATE booking
+       SET status = 'CONFIRMED'
+       WHERE booking_id = $1`,
+      [bookingId]
+    );
+
+    await client.query("COMMIT");
+    return { ok: true };
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+async function rejectPayment({ bookingId, adminUserId, reason }) {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const b = await client.query(
+      `SELECT booking_id, trip_id, status
+       FROM booking
+       WHERE booking_id = $1
+       FOR UPDATE`,
+      [bookingId]
+    );
+
+    if (b.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return { ok: false, code: "NO_BOOKING" };
+    }
+
+    const booking = b.rows[0];
+
+    if (booking.status !== "WAITING_VERIFY") {
+      await client.query("ROLLBACK");
+      return { ok: false, code: "BAD_BOOKING_STATUS" };
+    }
+
+    await client.query(
+      `UPDATE payment
+       SET status = 'REJECTED',
+           reviewed_at = NOW(),
+           reviewed_by = $2,
+           reject_reason = $3
+       WHERE booking_id = $1`,
+      [bookingId, adminUserId, reason || null]
+    );
+
+    await client.query(
+      `UPDATE booking
+       SET status = 'PAYMENT_REJECTED'
+       WHERE booking_id = $1`,
+      [bookingId]
+    );
+
+    await client.query(
+      `DELETE FROM booking_seat
+       WHERE booking_id = $1`,
+      [bookingId]
+    );
+
+    await client.query(
+      `UPDATE seat_status
+       SET status = 'FREE',
+           hold_token = NULL,
+           hold_user_id = NULL,
+           hold_expires_at = NULL,
+           booked_user_id = NULL,
+           booked_at = NULL
+       WHERE trip_id = $1`,
+      [booking.trip_id]
+    );
+
+    await client.query("COMMIT");
+    return { ok: true };
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = {
+  createManualPromptPayQR,
+  submitPaymentSlip,
+  getPendingPayments,
+  approvePayment,
+  rejectPayment,
+};
