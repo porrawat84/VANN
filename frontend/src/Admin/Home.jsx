@@ -11,7 +11,7 @@ function Location({ goPage}) {
     return (
         <div className="app" >
             <img src={logo} className="location-logo" />
-
+            <div className="location-container">
             <div className="content location">
 
                 <button className="btn location" onClick={() => handleSelect("FP")}>
@@ -25,6 +25,7 @@ function Location({ goPage}) {
                 <button className="btn location" onClick={() => handleSelect("VM")}>
                     Victory Monument
                 </button>
+            </div>
             </div>
             <div><BottomNav goPage={goPage} /></div>
         </div>

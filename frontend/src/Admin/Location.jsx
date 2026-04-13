@@ -52,7 +52,7 @@ export default function AdminLocation({ goPage }) {
             {/* top bar */}
             <div className="top-bar">
                 <button className="back-btn" onClick={() => goPage("adminHome")}>
-                    ←
+                    ⬅
                 </button>
 
                 <select

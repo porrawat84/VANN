@@ -97,8 +97,9 @@
 .status {
     padding: 5px 10px;
     border-radius: 20px;
-    font-size: 12px;
+    font-size: 10px;
     border: 1px solid black;
+    width: 80px;
 }
 
 .status.success {
@@ -111,4 +112,99 @@
 
 .status.empty {
     background: #ddd;
+}
+
+.summary-box {
+    width: 90%;
+    margin: 15px auto;
+    padding: 15px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* แยกสีแต่ละค่า */
+.summary-box div:nth-child(1) {
+    color: #333;
+}
+
+.summary-box div:nth-child(2) {
+    color: #333;
+}
+
+.summary-box div:nth-child(3) {
+    color: #333;
+}
+
+.summary-box div:nth-child(4) {
+    color: #333;
+}
+
+
+/*css สำหรับ popup รูป*/
+.slip-btn {
+    margin-left: 8px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    font-size: 15px;
+}
+
+.popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.popup-content img {
+    max-width: 300px;
+    border-radius: 10px;
+}
+
+
+/* edit */
+.btn.edit {
+    background: #e0dcdc;
+    padding: 1px 5px;   /* 🔥 ลดขนาดปุ่ม */
+    font-size: 11px;      /* 🔥 ตัวหนังสือเล็กลง */
+    border-radius: 5px;
+    width: 30px;
+    border: 1px solid black;
+    height: 20px;
+
+}
+
+/* save */
+.btn.save {
+    background: #4caf50;
+    color: white;
+    font-size: 11px ;
+    height: 25px;
+    width: 30px;
+}
+
+/* cancel */
+.btn.cancel {
+    background: #f44336;
+    color: white;
+    font-size: 11px ;
+    height: 25px;
+    width: 30px;
+}
+
+/* จัดปุ่มให้อยู่ข้างกัน */
+.btn-groupedit {
+    display: flex;
+    gap: 6px;
+    padding: 4px 2px;
 }

@@ -1,0 +1,157 @@
+
+body {
+    margin: 0;
+    font-family: 'Grandstander', cursive;
+    display: flex;
+    justify-content: center;
+    background: #111;
+}
+/* หน้าเต็ม */
+.chat-page {
+    width: 100%;
+    max-width: 420px;
+    /* จำกัดไม่ให้ใหญ่เกิน */
+    padding: 30px;
+    display: block;
+    justify-content: center;
+    background: #F0F0F0;
+    height: 100vh;
+    overflow-y: auto;
+
+
+    position: relative;
+    padding-bottom: 90px;
+}
+
+/* HEADER */
+.chat-title {
+    background: #FFF9B6;
+    padding: 14px;
+    display: flex;
+    width: 60%;
+    margin: 0 auto 20px auto;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border-radius: 60px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.chat-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* ปุ่ม back */
+.back-btn {
+    border: none;
+    background: white;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    font-size: 16px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    transition: 0.2s;
+}
+
+.back-btn:hover {
+    background: #f0f0f0;
+}
+
+/* LIST */
+.chat-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+}
+
+/* ITEM */
+.chat-item {
+    display: flex;
+    align-items: center;
+    background: white;
+    padding: 12px;
+    border-radius: 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.chat-item:hover {
+    transform: translateY(-2px);
+    background: #f9f9f9;
+}
+
+/* AVATAR */
+.avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #90caf9, #42a5f5);
+    margin-right: 12px;
+}
+
+/* INFO */
+.chat-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* NAME */
+.chat-name {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+/* LAST MESSAGE */
+.chat-last {
+    font-size: 13px;
+    color: #777;
+    margin-top: 2px;
+}
+
+/* TIME */
+.chat-time {
+    font-size: 12px;
+    color: #999;
+}
+
+/* SCROLLBAR (optional สวยขึ้น) */
+.chat-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-list::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+}
+
+.chat-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+}
+
+
+/* 🔴 badge แดง */
+.unread-badge {
+    background: red;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+
+    border-radius: 999px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

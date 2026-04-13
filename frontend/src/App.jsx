@@ -6,9 +6,12 @@ import Time from "./Time";
 import Seat from "./Seat";
 import Forgetpass from "./Forgetpass";
 
+import AdminBottomNav from "./Admin/BottomNav";
 import AdminHome from "./Admin/Home";
 import AdminLocation from "./Admin/Location";
 import Dataseat from "./Admin/Dataseat";
+import AdminDashboardChat from "./Admin/DashboardChat";
+import AdminChatRoom from "./Admin/ChatRoom";
 
 function bangkokYMD() {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -172,14 +175,24 @@ export default function App() {
     window.tcp.send({ type: "LIST_SEATS", tripId });
   }, [page]);
 
-  const goTo = (nextPage) => setPage(nextPage);
+  const [selectedChat, setSelectedChat] = useState(null);
+
+  const goTo = (nextPage, data = null) => {
+    if (data) setSelectedChat(data);   // 🔥 เก็บตรงนี้ก็ได้
+    setPage(nextPage);
+  };
+
+  const [unreadMap, setUnreadMap] = useState({
+    1: 2,
+    2: 1,
+  });
 
   const pages = {
     signin: <Signin notify={notify}
       goSignup={() => goTo("signup")}
       goForget={() => goTo("forgetpass")}
       goLocation={() => goTo("location")}
-      goAdmin={() => goTo("admin")} />,
+      goAdmin={() => goTo("adminHome")} />,
 
     signup: <Signup goNext={() => goTo("signin")}
       notify={notify}
@@ -203,15 +216,48 @@ export default function App() {
     ),
 
     //Admin
-    admin: <AdminHome goPage={goTo} />,
+    adminHome: <AdminHome goPage={goTo} />,
     adminLocation: <AdminLocation goPage={goTo} />,
     dataseat: <Dataseat goPage={goTo} />,
+
+    adminDashboardChat: (
+      <AdminDashboardChat
+        goChat={(chat) => {
+          setSelectedChat(chat);
+
+          // 🔥 ล้าง unread
+          setUnreadMap((prev) => ({
+            ...prev,
+            [chat.id]: 0,
+          }));
+
+          goTo("adminChatRoom");
+        }}
+        goPage={goTo}
+        unreadMap={unreadMap}
+      />
+    ),
+
+    adminChatRoom: (
+      <AdminChatRoom
+        goPage={goTo}
+        goBack={() => goTo("adminDashboardChat")}
+        chat={selectedChat}
+        userId={userId}
+      />
+    ),
 
   };
 
   return (
     <>
       {pages[page] || <div>Page not found</div>}
+
+      {/* 🔥 ADD ตรงนี้ */}
+      {page !== "signin" && page !== "signup" && page !== "forgetpass" && (
+        <AdminBottomNav goPage={goTo} currentPage={page} />
+      )}
+
       {toast && (
         <div className={`app-toast app-toast--${toast.type}`} role="status" aria-live="polite">
           {toast.message}

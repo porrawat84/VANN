@@ -135,7 +135,7 @@ export default function Signin({ goSignup, goForget, notify, goLocation, goAdmin
 
                 <p className="forgot" onClick={goForget}>forget password?</p>
             </div>
-
+            <p className="forgot" onClick={goAdmin}>admin</p>
         </div>
     );
 }

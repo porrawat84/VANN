@@ -73,6 +73,7 @@
     margin: 0 auto;
     padding: 5px 20px 20px 20px;
     box-shadow: 0px 3px 4px rgb(56, 56, 56);
+    
     flex: 1;
     overflow-y: auto;
     padding-bottom: 90px;
@@ -90,6 +91,7 @@
     border: 1px solid black;
     padding: 10px;
     margin-bottom: 15px;
+    margin-top: 30px;
 
     font-size: 18px;
     font-weight: 50px;

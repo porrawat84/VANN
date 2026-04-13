@@ -10,34 +10,41 @@ import chatSelect from "./assets/image/chat select.png";
 import profile from "./assets/image/Profile.png";
 import profileSelect from "./assets/image/Profile select.png";
 
-export default function BottomNav({ goPage }) {
-    const [active, setActive] = useState("dashboard");
+export default function BottomNav({ goPage, currentPage }) {
+
+    const isChatPage =
+        currentPage === "adminDashboardChat" ||
+        currentPage === "adminChatRoom";
+
+    const isHomePage =
+        currentPage === "adminHome" ||
+        currentPage === "adminLocation" ||
+        currentPage === "dataseat";
 
     const handleClick = (page) => {
-        setActive(page);
         goPage(page);
     };
 
     return (
         <div className="bottom-nav">
 
-            <span onClick={() => handleClick("location")}>
+            <span onClick={() => handleClick("adminHome")}>
                 <img
-                    src={active === "location" ? homeSelect : home}
+                    src={isHomePage ? homeSelect : home}
                     alt=""
                 />
             </span>
 
-            <span onClick={() => handleClick("chat")}>
+            <span onClick={() => handleClick("adminDashboardChat")}>
                 <img
-                    src={active === "chat" ? chatSelect : chat}
+                    src={isChatPage ? chatSelect : chat}
                     alt=""
                 />
             </span>
 
             <span onClick={() => handleClick("profile")}>
                 <img
-                    src={active === "profile" ? profileSelect : profile}
+                    src={currentPage === "profile" ? profileSelect : profile}
                     alt=""
                 />
             </span>
