@@ -41,18 +41,9 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
   const [showSummary, setShowSummary] = useState(false);
   const [bookingData, setBookingData] = useState(null);
   const [creatingBooking, setCreatingBooking] = useState(false);
-  const [paymentQrUri, setPaymentQrUri] = useState("");
-
-  const [paymentSecondsLeft, setPaymentSecondsLeft] = useState(600);
   const [currentBookingId, setCurrentBookingId] = useState(null);
 
-  const [transferTime, setTransferTime] = useState("");
-  const [slipFile, setSlipFile] = useState(null);
-  const [slipPreview, setSlipPreview] = useState("");
-  const [submittingSlip, setSubmittingSlip] = useState(false);
-
   const holdTokensRef = useRef({});
-  const paymentTimerRef = useRef(null);
 
   const dest = localStorage.getItem("dest") || "";
   const hhmm = localStorage.getItem("hhmm") || "";
@@ -62,6 +53,7 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
     localStorage.getItem("email") ||
     String(userId || "");
   const phone = localStorage.getItem("phone") || "-";
+  const effectiveUserId = userId || Number(localStorage.getItem("userId")) || null;
 
   const tcpSend = (packet) => {
     if (!window.tcp) return;
@@ -85,27 +77,45 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
   };
 
   const openSummary = () => {
-    if (!tripId) return alert("ยังโหลดรอบรถไม่เสร็จ");
-    if (!userId) return alert("กรุณาเข้าสู่ระบบ");
-    if (selected.length === 0) return;
+    console.log("openSummary()", {
+        tripId,
+        userId,
+        effectiveUserId,
+        selected,
+      });
 
-    const seatPrice = getSeatPrice(dest);
-    const seatsCopy = [...selected];
+      if (!tripId) {
+        notify("ยังโหลดรอบรถไม่เสร็จ", "error");
+        return;
+      }
 
-    setBookingData({
-      username,
-      seats: seatsCopy,
-      time: getTimeLabel(hhmm),
-      phone,
-      destination: getDestLabel(dest),
-      price: seatPrice * seatsCopy.length,
-      tripId,
-      hhmm,
-      dest,
-    });
+      if (!effectiveUserId) {
+        notify("กรุณาเข้าสู่ระบบใหม่อีกครั้ง", "error");
+        return;
+      }
 
-    setShowSummary(true);
-  };
+      if (selected.length === 0) {
+        notify("กรุณาเลือกที่นั่งก่อน", "error");
+        return;
+      }
+
+      const seatPrice = getSeatPrice(dest);
+      const seatsCopy = [...selected];
+
+      setBookingData({
+        username,
+        seats: seatsCopy,
+        time: getTimeLabel(hhmm),
+        phone,
+        destination: getDestLabel(dest),
+        price: seatPrice * seatsCopy.length,
+        tripId,
+        hhmm,
+        dest,
+      });
+
+      setShowSummary(true);
+    };
 
   const handleSummaryConfirm = async () => {
     if (!bookingData) return;
@@ -188,100 +198,9 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
     }
   };
 
-  const handleSlipChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setSlipFile(file);
-
-    const previewUrl = URL.createObjectURL(file);
-    setSlipPreview(previewUrl);
-  };
-
-  const fileToBase64 = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-
-  const handleSubmitSlip = async () => {
-    if (!currentBookingId) {
-      notify("ไม่พบ booking กรุณาเริ่มใหม่", "error");
-      return;
-    }
-
-    if (!transferTime) {
-      notify("กรุณากรอกวันเวลาที่โอนเงิน", "error");
-      return;
-    }
-
-    if (!slipFile) {
-      notify("กรุณาแนบสลิปการโอนเงิน", "error");
-      return;
-    }
-
-    try {
-      setSubmittingSlip(true);
-
-      const slipBase64 = await fileToBase64(slipFile);
-
-      const res = await tcpRequest({
-        type: "SUBMIT_PAYMENT_SLIP",
-        bookingId: currentBookingId,
-        transferredAt: transferTime,
-        slipBase64,
-        slipFileName: slipFile.name,
-        userId: Number(userId),
-      });
-
-      if (res.type !== "SUBMIT_PAYMENT_SLIP_OK") {
-        notify(res.code || "ส่งสลิปไม่สำเร็จ กรุณาลองใหม่", "error");
-        return;
-      }
-
-      notify("ส่งสลิปเรียบร้อยแล้ว! รอแอดมินตรวจสอบ", "info");
-      closePayment();
-    } catch (e) {
-      console.error(e);
-      notify("เกิดข้อผิดพลาด กรุณาลองใหม่", "error");
-    } finally {
-      setSubmittingSlip(false);
-    }
-  };
-
   const closeSummary = () => {
     setShowSummary(false);
   };
-
-  const closePayment = () => {
-    setShowPayment(false);
-    setSelected([]);
-    setBookingData(null);
-    setCurrentBookingId(null);
-    setTransferTime("");
-    setSlipFile(null);
-    setSlipPreview("");
-    setPaymentQrUri("");
-    holdTokensRef.current = {};
-
-    if (paymentTimerRef.current) {
-      clearInterval(paymentTimerRef.current);
-      paymentTimerRef.current = null;
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      if (paymentTimerRef.current) {
-        clearInterval(paymentTimerRef.current);
-      }
-      if (slipPreview) {
-        URL.revokeObjectURL(slipPreview);
-      }
-    };
-  }, [slipPreview]);
 
   const SeatBox = ({ num }) => {
     const reserved = isReserved(num);
@@ -359,6 +278,30 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
           Confirm ({selected.length})
         </button>
       </div>
+      {showSummary && bookingData && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <button className="close" onClick={closeSummary}>✕</button>
+
+            <h2>information</h2>
+
+            <p><b>username :</b> {bookingData.username}</p>
+            <p><b>seat :</b> {bookingData.seats.join(", ")}</p>
+            <p><b>time :</b> {bookingData.time}</p>
+            <p><b>phone :</b> {bookingData.phone}</p>
+            <p><b>destination :</b> {bookingData.destination}</p>
+            <p><b>price :</b> {bookingData.price} baht</p>
+
+            <button
+              className="confirm-btn"
+              onClick={handleSummaryConfirm}
+              disabled={creatingBooking}
+            >
+              {creatingBooking ? "loading..." : "confirm"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
