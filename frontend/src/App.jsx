@@ -6,6 +6,7 @@ import Time from "./Time";
 import Seat from "./Seat";
 import Forgetpass from "./Forgetpass";
 import UserBottomNav from './UserBottomNav';
+import Payment from "./Payment";
 
 import AdminBottomNav from "./Admin/BottomNav";
 import AdminHome from "./Admin/Home";
@@ -53,6 +54,7 @@ export default function App() {
 
   const [page, setPage] = useState("signin");
 
+  const [paymentPageData, setPaymentPageData] = useState(null);
   const [connected, setConnected] = useState(false);
   const [todayTrips, setTodayTrips] = useState([]);
   const [seats, setSeats] = useState({});
@@ -200,6 +202,11 @@ export default function App() {
     2: 1,
   });
 
+  const openPaymentPage = (data) => {
+    setPaymentPageData(data);
+    setPage("payment");
+  };
+
   const pages = {
     signin: <Signin notify={notify}
       goSignup={() => goTo("signup")}
@@ -225,9 +232,23 @@ export default function App() {
         userId={userId}
         tcpRequest={tcpRequest}
         notify={notify}
-        goNext={() => goTo("location")}
+        openPaymentPage={openPaymentPage}
       />
     ),
+
+    payment: (
+      <Payment
+        data={paymentPageData}
+        tcpRequest={tcpRequest}
+        notify={notify}
+        goBack={() => setPage("seat")}
+        goDone={() => {
+          setPaymentPageData(null);
+          setPage("location");
+        }}
+      />
+    ),
+    
 
     //Admin
     adminHome: <AdminHome goPage={goTo} />,

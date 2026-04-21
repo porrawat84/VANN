@@ -37,10 +37,8 @@ function formatCountdown(sec) {
   return `${mm}:${ss}`;
 }
 
-export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify, goNext }) {
-  const [selected, setSelected] = useState([]);
+export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify, openPaymentPage }) {  const [selected, setSelected] = useState([]);
   const [showSummary, setShowSummary] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
   const [bookingData, setBookingData] = useState(null);
   const [creatingBooking, setCreatingBooking] = useState(false);
   const [paymentQrUri, setPaymentQrUri] = useState("");
@@ -123,7 +121,6 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
           type: "HOLD",
           tripId: bookingData.tripId,
           seat: seatId,
-          userId: Number(userId),
         });
 
         if (holdMsg.type !== "HOLD_OK") {
@@ -141,7 +138,6 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
         seats: bookingData.seats,
         totalPriceBaht: bookingData.price,
         holdTokens: holdTokensRef.current,
-        userId: Number(userId),
       });
 
       if (bookingRes.type !== "CREATE_BOOKING_OK") {
@@ -152,7 +148,6 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
       const paymentRes = await tcpRequest({
         type: "PAYMENT_CREATE_PROMPTPAY",
         bookingId: bookingRes.bookingId,
-        userId: Number(userId),
       });
 
       if (paymentRes.type !== "PAYMENT_QR") {
@@ -160,11 +155,18 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
         return;
       }
 
-      setPaymentQrUri(paymentRes.qrUri || "");
-      setCurrentBookingId(bookingRes.bookingId);
       setShowSummary(false);
-      setShowPayment(true);
-      setPaymentSecondsLeft(600);
+
+      openPaymentPage({
+        bookingId: bookingRes.bookingId,
+        qrUri: paymentRes.qrUri || "",
+        amountBaht: paymentRes.amountBaht || bookingData.price,
+        seats: bookingData.seats,
+        dest: bookingData.dest,
+        hhmm: bookingData.hhmm,
+        username: bookingData.username,
+        phone: bookingData.phone,
+      });
 
       if (paymentTimerRef.current) clearInterval(paymentTimerRef.current);
       paymentTimerRef.current = setInterval(() => {
@@ -357,107 +359,6 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
           Confirm ({selected.length})
         </button>
       </div>
-
-      {showSummary && bookingData && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <button className="close" onClick={closeSummary}>✕</button>
-
-            <h2>information</h2>
-
-            <p><b>username :</b> {bookingData.username}</p>
-            <p><b>seat :</b> {bookingData.seats.join(", ")}</p>
-            <p><b>time :</b> {bookingData.time}</p>
-            <p><b>phone :</b> {bookingData.phone}</p>
-            <p><b>destination :</b> {bookingData.destination}</p>
-            <p><b>price :</b> {bookingData.price} baht</p>
-
-            <button
-              className="confirm-btn"
-              onClick={handleSummaryConfirm}
-              disabled={creatingBooking}
-            >
-              {creatingBooking ? "loading..." : "confirm"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showPayment && bookingData && (
-        <div className="payment-overlay">
-          <div className="payment-card">
-            <button className="payment-close" onClick={closePayment}>×</button>
-
-            <div className="payment-logo">PromptPay</div>
-
-            <div className="payment-qr-wrap">
-              {paymentQrUri ? (
-                <img src={paymentQrUri} alt="PromptPay QR" className="payment-qr" />
-              ) : (
-                <div className="payment-qr-placeholder">loading...</div>
-              )}
-            </div>
-
-            <div className="payment-info">
-              <p><b>username :</b> {bookingData.username}</p>
-              <p><b>seat :</b> {bookingData.seats.join(", ")}</p>
-              <p><b>time :</b> {bookingData.time}</p>
-              <p><b>phone :</b> {bookingData.phone}</p>
-              <p><b>destination :</b> {bookingData.destination}</p>
-              <p><b>price :</b> {bookingData.price} baht</p>
-            </div>
-
-            <p className="payment-pending">
-              payment pending {formatCountdown(paymentSecondsLeft)}
-            </p>
-
-            <div style={{ marginTop: "12px", textAlign: "left" }}>
-              <label style={{ display: "block", marginBottom: "6px" }}>
-                transfer time
-              </label>
-              <input
-                type="datetime-local"
-                value={transferTime}
-                onChange={(e) => setTransferTime(e.target.value)}
-                style={{ width: "100%", marginBottom: "10px" }}
-              />
-
-              <label style={{ display: "block", marginBottom: "6px" }}>
-                upload slip
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleSlipChange}
-                style={{ width: "100%", marginBottom: "10px" }}
-              />
-
-              {slipPreview && (
-                <img
-                  src={slipPreview}
-                  alt="slip preview"
-                  style={{
-                    width: "100%",
-                    maxHeight: "180px",
-                    objectFit: "contain",
-                    borderRadius: "12px",
-                    marginBottom: "10px",
-                    background: "#fff",
-                  }}
-                />
-              )}
-            </div>
-
-            <button
-              className="payment-confirm-btn"
-              onClick={handleSubmitSlip}
-              disabled={submittingSlip}
-            >
-              {submittingSlip ? "submitting..." : "payment confirm"}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
