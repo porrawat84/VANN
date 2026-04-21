@@ -14,6 +14,7 @@ const PORT = Number(process.env.PORT || 9000);
 // --- clients + subscriptions
 const clients = new Set(); // { socket, userId, role, tripId }
 function send(socket, obj) {
+  console.log("TCP OUT ->", obj);
   socket.write(JSON.stringify(obj) + "\n");
 }
 function broadcastToTrip(tripId, obj) {
@@ -60,8 +61,13 @@ const server = net.createServer((socket) => {
       if (!line) continue;
 
       let msg;
-      try { msg = JSON.parse(line); }
-      catch { send(socket, { type: "ERROR", code: "BAD_JSON" }); continue; }
+      try {
+        msg = JSON.parse(line);
+        console.log("TCP IN <-", msg);
+      } catch {
+        send(socket, { type: "ERROR", code: "BAD_JSON" });
+        continue;
+      }
 
       try {
         const normalizeUserId = (v) => {
@@ -494,6 +500,7 @@ const server = net.createServer((socket) => {
 
         send(socket, { type: "ERROR", code: "UNKNOWN_TYPE" });
       } catch (e) {
+        console.error("SERVER_ERROR while handling message:", msg, e);
         send(socket, {
           type: "ERROR",
           code: "SERVER_ERROR",

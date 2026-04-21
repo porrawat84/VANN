@@ -153,13 +153,13 @@ export default function App() {
     window.tcp.send({ type: "GET_TODAY_TRIPS" });
 
     // ถ้ามี userId ค้างไว้ ค่อย HELLO
-    const stored = localStorage.getItem("userId");
-    const uid = stored ? Number(stored) : null;
-    if (Number.isFinite(uid) && !didHello.current) {
-      didHello.current = true;
-      const role = localStorage.getItem("role") || "USER";
-      window.tcp.send({ type: "HELLO", userId: uid, role });
-    }
+    //const stored = localStorage.getItem("userId");
+    //const uid = stored ? Number(stored) : null;
+    //if (Number.isFinite(uid) && !didHello.current) {
+      //didHello.current = true;
+      //const role = localStorage.getItem("role") || "USER";
+      //window.tcp.send({ type: "HELLO", userId: uid, role });
+    //}
 
     return () => unsubscribe?.();
   }, []);

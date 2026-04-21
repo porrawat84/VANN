@@ -31,6 +31,8 @@ function connectTCP() {
       if (!line) continue;
       try {
         const msg = JSON.parse(line);
+        console.log("Received from TCP server:", msg);
+
         if (win && !win.isDestroyed()) {
           win.webContents.send("tcp-message", msg);
         }

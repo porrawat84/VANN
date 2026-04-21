@@ -70,23 +70,20 @@ export default function Signin({ goSignup, goForget, notify, goLocation, goAdmin
             return;
         }
 
-        // 🟢 ถ้าเป็น Electron (มี TCP)
+        localStorage.removeItem("userId");
+        localStorage.removeItem("role");
+
         if (window.tcp) {
             window.tcp.send({
-                type: "SIGN_IN",
-                email: formData.email.trim(),
-                password: formData.password
+            type: "SIGN_IN",
+            email: formData.email.trim(),
+            password: formData.password
             });
-        }
-
-        // 🔵 ถ้าเป็น browser (ตอนนี้ของเธอ)
-        else {
+        } else {
             console.log("Mock login");
-
-            // 👇 ใส่อันนี้ = ไปหน้า home ได้เลย
             goLocation();
         }
-    };
+        };
 
 
 
