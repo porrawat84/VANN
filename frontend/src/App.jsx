@@ -13,6 +13,7 @@ import AdminLocation from "./Admin/Location";
 import Dataseat from "./Admin/Dataseat";
 import AdminDashboardChat from "./Admin/DashboardChat";
 import AdminChatRoom from "./Admin/ChatRoom";
+import AdminProfile from "./Admin/Profile";
 
 function bangkokYMD() {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -105,6 +106,13 @@ export default function App() {
     window.tcp.offAllMessages?.();
 
     const handler = (msg) => {
+      console.log("TCP message from server:", msg);
+
+      if (msg.type === "ERROR") {
+        console.error("Server error:", msg);
+        notify(msg.message || msg.code || "server error", "error");
+        return;
+      }
       const cb = msg.requestId && pendingRef.current.get(msg.requestId);
       if (cb) return cb(msg);
 
@@ -247,6 +255,8 @@ export default function App() {
         userId={userId}
       />
     ),
+
+    adminProfile: <AdminProfile goPage={goTo} />,
 
   };
 

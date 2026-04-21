@@ -43,6 +43,7 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
   const [showPayment, setShowPayment] = useState(false);
   const [bookingData, setBookingData] = useState(null);
   const [creatingBooking, setCreatingBooking] = useState(false);
+  const [paymentQrUri, setPaymentQrUri] = useState("");
 
   const [paymentSecondsLeft, setPaymentSecondsLeft] = useState(600);
   const [currentBookingId, setCurrentBookingId] = useState(null);
@@ -260,6 +261,7 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
     setTransferTime("");
     setSlipFile(null);
     setSlipPreview("");
+    setPaymentQrUri("");
     holdTokensRef.current = {};
 
     if (paymentTimerRef.current) {
