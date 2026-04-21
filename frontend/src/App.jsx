@@ -33,7 +33,7 @@ export default function App() {
   const pendingRef = useRef(new Map());
   const toastTimerRef = useRef(null);
 
-  const tcpRequest = (packet, timeoutMs = 6000) => {
+  const tcpRequest = (packet, timeoutMs = 15000) => {
     const requestId = crypto.randomUUID();
     return new Promise((resolve, reject) => {
       const t = setTimeout(() => {
@@ -108,13 +108,15 @@ export default function App() {
     const handler = (msg) => {
       console.log("TCP message from server:", msg);
 
+      // ส่งให้ pending callback ก่อนเสมอ (รวมถึง ERROR ที่มี requestId)
+      const cb = msg.requestId && pendingRef.current.get(msg.requestId);
+      if (cb) return cb(msg);
+
       if (msg.type === "ERROR") {
         console.error("Server error:", msg);
         notify(msg.message || msg.code || "server error", "error");
         return;
       }
-      const cb = msg.requestId && pendingRef.current.get(msg.requestId);
-      if (cb) return cb(msg);
 
       if (msg.type === "TODAY_TRIPS") setTodayTrips(msg.trips || []);
       if (msg.type === "SEATS") setSeats(msg.seats || {});
@@ -128,6 +130,8 @@ export default function App() {
 
         localStorage.setItem("userId", String(id));
         localStorage.setItem("role", msg.role || "USER");
+        if (msg.name) localStorage.setItem("name", msg.name);
+        if (msg.phone) localStorage.setItem("phone", msg.phone);
 
         if (!didHello.current) {
           didHello.current = true;
@@ -152,14 +156,14 @@ export default function App() {
     // ขอ trips
     window.tcp.send({ type: "GET_TODAY_TRIPS" });
 
-    // ถ้ามี userId ค้างไว้ ค่อย HELLO
-    //const stored = localStorage.getItem("userId");
-    //const uid = stored ? Number(stored) : null;
-    //if (Number.isFinite(uid) && !didHello.current) {
-      //didHello.current = true;
-      //const role = localStorage.getItem("role") || "USER";
-      //window.tcp.send({ type: "HELLO", userId: uid, role });
-    //}
+    // ถ้ามี userId ค้างไว้ ค่อย HELLO (สำคัญมาก! ไม่งั้น server ไม่รู้จัก user → payment ล้มเหลว)
+    const stored = localStorage.getItem("userId");
+    const uid = stored ? Number(stored) : null;
+    if (Number.isFinite(uid) && !didHello.current) {
+      didHello.current = true;
+      const role = localStorage.getItem("role") || "USER";
+      window.tcp.send({ type: "HELLO", userId: uid, role });
+    }
 
     return () => unsubscribe?.();
   }, []);
@@ -221,6 +225,7 @@ export default function App() {
         userId={userId}
         tcpRequest={tcpRequest}
         notify={notify}
+        goNext={() => goTo("location")}
       />
     ),
 

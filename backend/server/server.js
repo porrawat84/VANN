@@ -134,7 +134,7 @@ const server = net.createServer((socket) => {
           clientInfo.userId = Number(r.userId);
           clientInfo.role = r.role;
 
-          send(socket, { type: "SIGN_IN_OK", userId: clientInfo.userId, role: clientInfo.role });
+          send(socket, { type: "SIGN_IN_OK", userId: clientInfo.userId, role: clientInfo.role, name: r.name, phone: r.phone });
           continue;
         }
         // ---- forgot password
@@ -256,27 +256,32 @@ const server = net.createServer((socket) => {
             continue;
           }
 
-          const totalPriceSatang = Math.round(Number(msg.totalPriceBaht) * 100);
-          const r = await createBooking({
-            userId: actorUserId,
-            tripId: msg.tripId,
-            seats: msg.seats,
-            totalPriceSatang,
-            holdTokens: msg.holdTokens || {},
-          });
+          try {
+            const totalPriceSatang = Math.round(Number(msg.totalPriceBaht) * 100);
+            const r = await createBooking({
+              userId: actorUserId,
+              tripId: msg.tripId,
+              seats: msg.seats,
+              totalPriceSatang,
+              holdTokens: msg.holdTokens || {},
+            });
 
-          reply({
-            type: "CREATE_BOOKING_OK",
-            bookingId: r.bookingId,
-            status: r.status,
-            amount: totalPriceSatang,
-          });
+            reply({
+              type: "CREATE_BOOKING_OK",
+              bookingId: r.bookingId,
+              status: r.status,
+              amount: totalPriceSatang,
+            });
 
-          broadcastToUser(actorUserId, {
-            type: "EVENT_BOOKING",
-            bookingId: r.bookingId,
-            status: r.status,
-          });
+            broadcastToUser(actorUserId, {
+              type: "EVENT_BOOKING",
+              bookingId: r.bookingId,
+              status: r.status,
+            });
+          } catch (e) {
+            console.error("CREATE_BOOKING error:", e);
+            reply({ type: "ERROR", code: "CREATE_BOOKING_FAILED", message: e.message });
+          }
 
           continue;
         }

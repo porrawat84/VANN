@@ -43,7 +43,7 @@ async function registerUser({ name, email, phone, password }) {
 
 async function loginUser({ email, password }) {
   const { rows } = await pool.query(
-    `SELECT user_id, password_hash, role
+    `SELECT user_id, password_hash, role, name, phone
      FROM app_user
      WHERE email=$1`,
     [email]
@@ -54,7 +54,7 @@ async function loginUser({ email, password }) {
   const ok = verifyPassword(password, u.password_hash);
   if (!ok) return { ok: false, code: "BAD_CREDENTIALS" };
 
-  return { ok: true, userId: u.user_id, role: u.role };
+  return { ok: true, userId: u.user_id, role: u.role, name: u.name, phone: u.phone };
 }
 
 async function getUserRole(userId) {

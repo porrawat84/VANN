@@ -37,7 +37,7 @@ function formatCountdown(sec) {
   return `${mm}:${ss}`;
 }
 
-export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
+export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify, goNext }) {
   const [selected, setSelected] = useState([]);
   const [showSummary, setShowSummary] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
@@ -127,7 +127,7 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
         });
 
         if (holdMsg.type !== "HOLD_OK") {
-          alert(`HOLD ไม่สำเร็จ: ${seatId}`);
+          notify(`จองที่นั่ง ${seatId} ไม่สำเร็จ: ${holdMsg.code || holdMsg.message || "unknown"}`, "error");
           return;
         }
 
@@ -145,7 +145,7 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
       });
 
       if (bookingRes.type !== "CREATE_BOOKING_OK") {
-        alert("สร้าง booking ไม่สำเร็จ");
+        notify(`สร้าง booking ไม่สำเร็จ: ${bookingRes.code || bookingRes.message || "unknown"}`, "error");
         return;
       }
 
@@ -156,7 +156,7 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
       });
 
       if (paymentRes.type !== "PAYMENT_QR") {
-        alert(paymentRes.code || "สร้าง QR payment ไม่สำเร็จ");
+        notify(paymentRes.code || "สร้าง QR payment ไม่สำเร็จ", "error");
         return;
       }
 
@@ -180,7 +180,7 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
       tcpSend({ type: "LIST_SEATS", tripId: bookingData.tripId });
     } catch (e) {
       console.error(e);
-      alert("เชื่อมต่อผิดพลาด");
+      notify("เชื่อมต่อผิดพลาด กรุณาลองใหม่", "error");
     } finally {
       setCreatingBooking(false);
     }
@@ -206,17 +206,17 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
 
   const handleSubmitSlip = async () => {
     if (!currentBookingId) {
-      alert("ไม่พบ booking");
+      notify("ไม่พบ booking กรุณาเริ่มใหม่", "error");
       return;
     }
 
     if (!transferTime) {
-      alert("กรุณากรอกเวลาที่โอน");
+      notify("กรุณากรอกวันเวลาที่โอนเงิน", "error");
       return;
     }
 
     if (!slipFile) {
-      alert("กรุณาแนบสลิป");
+      notify("กรุณาแนบสลิปการโอนเงิน", "error");
       return;
     }
 
@@ -235,15 +235,15 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest }) {
       });
 
       if (res.type !== "SUBMIT_PAYMENT_SLIP_OK") {
-        alert(res.code || "ส่งสลิปไม่สำเร็จ");
+        notify(res.code || "ส่งสลิปไม่สำเร็จ กรุณาลองใหม่", "error");
         return;
       }
 
-      alert("ส่งสลิปเรียบร้อย รอแอดมินตรวจสอบ");
+      notify("ส่งสลิปเรียบร้อยแล้ว! รอแอดมินตรวจสอบ", "info");
       closePayment();
     } catch (e) {
       console.error(e);
-      alert("ส่งสลิปไม่สำเร็จ");
+      notify("เกิดข้อผิดพลาด กรุณาลองใหม่", "error");
     } finally {
       setSubmittingSlip(false);
     }
