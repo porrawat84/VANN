@@ -5,6 +5,7 @@ import Location from "./Location";
 import Time from "./Time";
 import Seat from "./Seat";
 import Forgetpass from "./Forgetpass";
+import UserBottomNav from './UserBottomNav';
 
 import AdminBottomNav from "./Admin/BottomNav";
 import AdminHome from "./Admin/Home";
@@ -253,10 +254,7 @@ export default function App() {
     <>
       {pages[page] || <div>Page not found</div>}
 
-      {/* 🔥 ADD ตรงนี้ */}
-      {page !== "signin" && page !== "signup" && page !== "forgetpass" && (
-        <AdminBottomNav goPage={goTo} currentPage={page} />
-      )}
+      
 
       {toast && (
         <div className={`app-toast app-toast--${toast.type}`} role="status" aria-live="polite">
