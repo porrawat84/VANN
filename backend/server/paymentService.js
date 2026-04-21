@@ -1,10 +1,10 @@
 require("dotenv").config();
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 const generatePayload = require("promptpay-qr");
 const QRCode = require("qrcode");
 const { pool } = require("./db");
-const { confirmSeat } = require("./seatService");
 
 const PROMPTPAY_ID = "0813131998";
 
@@ -91,7 +91,7 @@ async function submitPaymentSlip({
     const uploadsDir = ensureUploadDir();
     const ext = path.extname(slipFileName || "").toLowerCase() || ".png";
     const safeExt = [".png", ".jpg", ".jpeg", ".webp"].includes(ext) ? ext : ".png";
-    const fileName = `booking_${bookingId}_${Date.now()}${safeExt}`;
+    const fileName = `booking_${bookingId}_${Date.now()}_${crypto.randomUUID()}${safeExt}`;
     const filePath = path.join(uploadsDir, fileName);
 
     const pureBase64 = slipBase64.includes(",")
@@ -124,7 +124,7 @@ async function submitPaymentSlip({
              reviewed_by = NULL,
              reject_reason = NULL
          WHERE payment_id = $1`,
-        [paymentId, booking.total_price, transferredAt, filePath]
+        [paymentId, booking.total_price, transferredAt || null, filePath]
       );
     } else {
       const ins = await client.query(
@@ -132,7 +132,7 @@ async function submitPaymentSlip({
          (booking_id, amount, status, transferred_at, submitted_at, slip_image_path)
          VALUES ($1, $2, 'WAITING_VERIFY', $3, NOW(), $4)
          RETURNING payment_id`,
-        [bookingId, booking.total_price, transferredAt, filePath]
+        [bookingId, booking.total_price, transferredAt || null, filePath]
       );
 
       paymentId = ins.rows[0].payment_id;
@@ -146,7 +146,12 @@ async function submitPaymentSlip({
     );
 
     await client.query("COMMIT");
-    return { ok: true, paymentId, slipImagePath: filePath };
+
+    return {
+      ok: true,
+      paymentId,
+      slipImagePath: filePath,
+    };
   } catch (e) {
     await client.query("ROLLBACK");
     throw e;
@@ -177,7 +182,7 @@ async function getPendingPayments() {
      JOIN booking b ON b.booking_id = p.booking_id
      JOIN app_user u ON u.user_id = b.user_id
      WHERE p.status = 'WAITING_VERIFY'
-     ORDER BY p.submitted_at ASC`
+     ORDER BY p.submitted_at ASC NULLS LAST, p.created_at ASC`
   );
 
   return rows;
@@ -211,14 +216,64 @@ async function approvePayment({ bookingId, adminUserId }) {
 
     const holdTokens = booking.hold_tokens_json || {};
 
-    for (const seatId of Object.keys(holdTokens)) {
-      const holdToken = holdTokens[seatId];
-      const r = await confirmSeat(booking.trip_id, holdToken, booking.user_id);
+    for (const [seatId, holdToken] of Object.entries(holdTokens)) {
+      const seatQ = await client.query(
+        `SELECT seat_id, status, hold_user_id, hold_expires_at
+         FROM seat_status
+         WHERE trip_id = $1 AND seat_id = $2
+         FOR UPDATE`,
+        [booking.trip_id, seatId]
+      );
 
-      if (!r.ok) {
+      if (seatQ.rows.length === 0) {
         await client.query("ROLLBACK");
-        return { ok: false, code: `CONFIRM_FAIL_${seatId}_${r.code}` };
+        return { ok: false, code: `CONFIRM_FAIL_${seatId}_NO_SEAT_STATUS` };
       }
+
+      const seatRow = seatQ.rows[0];
+      const now = new Date();
+
+      if (seatRow.status !== "HELD") {
+        await client.query("ROLLBACK");
+        return { ok: false, code: `CONFIRM_FAIL_${seatId}_NOT_HELD` };
+      }
+
+      if (String(seatRow.hold_user_id) !== String(booking.user_id)) {
+        await client.query("ROLLBACK");
+        return { ok: false, code: `CONFIRM_FAIL_${seatId}_NOT_OWNER` };
+      }
+
+      if (seatRow.hold_token !== holdToken) {
+        await client.query("ROLLBACK");
+        return { ok: false, code: `CONFIRM_FAIL_${seatId}_BAD_TOKEN` };
+      }
+
+      if (!seatRow.hold_expires_at || seatRow.hold_expires_at <= now) {
+        await client.query(
+          `UPDATE seat_status
+           SET status = 'FREE',
+               hold_token = NULL,
+               hold_user_id = NULL,
+               hold_expires_at = NULL
+           WHERE trip_id = $1 AND seat_id = $2`,
+          [booking.trip_id, seatId]
+        );
+
+        await client.query("COMMIT");
+        return { ok: false, code: `CONFIRM_FAIL_${seatId}_EXPIRED` };
+      }
+
+      await client.query(
+        `UPDATE seat_status
+         SET status = 'BOOKED',
+             booked_user_id = $3,
+             booked_at = NOW(),
+             hold_token = NULL,
+             hold_user_id = NULL,
+             hold_expires_at = NULL
+         WHERE trip_id = $1 AND seat_id = $2`,
+        [booking.trip_id, seatId, booking.user_id]
+      );
     }
 
     await client.query(
@@ -275,6 +330,13 @@ async function rejectPayment({ bookingId, adminUserId, reason }) {
       return { ok: false, code: "BAD_BOOKING_STATUS" };
     }
 
+    const seatRows = await client.query(
+      `SELECT seat_id
+       FROM booking_seat
+       WHERE booking_id = $1`,
+      [bookingId]
+    );
+
     await client.query(
       `UPDATE payment
        SET status = 'REJECTED',
@@ -292,22 +354,24 @@ async function rejectPayment({ bookingId, adminUserId, reason }) {
       [bookingId]
     );
 
+    for (const row of seatRows.rows) {
+      await client.query(
+        `UPDATE seat_status
+         SET status = 'FREE',
+             hold_token = NULL,
+             hold_user_id = NULL,
+             hold_expires_at = NULL,
+             booked_user_id = NULL,
+             booked_at = NULL
+         WHERE trip_id = $1 AND seat_id = $2`,
+        [booking.trip_id, row.seat_id]
+      );
+    }
+
     await client.query(
       `DELETE FROM booking_seat
        WHERE booking_id = $1`,
       [bookingId]
-    );
-
-    await client.query(
-      `UPDATE seat_status
-       SET status = 'FREE',
-           hold_token = NULL,
-           hold_user_id = NULL,
-           hold_expires_at = NULL,
-           booked_user_id = NULL,
-           booked_at = NULL
-       WHERE trip_id = $1`,
-      [booking.trip_id]
     );
 
     await client.query("COMMIT");

@@ -21,14 +21,13 @@ CREATE TABLE IF NOT EXISTS van (
   status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','INACTIVE'))
 );
 
--- ✅ แก้ตรงนี้: เอา GENERATED ออก แล้วให้ service_date เป็นคอลัมน์ปกติ
 CREATE TABLE IF NOT EXISTS schedule (
   schedule_id BIGSERIAL PRIMARY KEY,
   van_id BIGINT NOT NULL REFERENCES van(van_id),
   origin_location_id BIGINT NOT NULL REFERENCES location(location_id),
   destination_location_id BIGINT NOT NULL REFERENCES location(location_id),
   departure_time TIMESTAMPTZ NOT NULL,
-  service_date DATE NOT NULL,  -- ✅ ใส่เองตอน INSERT/UPDATE
+  service_date DATE NOT NULL,  -- ใส่เองตอน INSERT/UPDATE
   price INTEGER NOT NULL CHECK (price >= 0),
   status TEXT NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','CLOSED'))
 );
@@ -47,7 +46,16 @@ CREATE TABLE IF NOT EXISTS booking (
   schedule_id BIGINT REFERENCES schedule(schedule_id),
   booking_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   total_price INTEGER NOT NULL CHECK (total_price >= 0),
-  status TEXT NOT NULL CHECK (status IN ('PENDING_PAYMENT','CONFIRMED','CANCELLED'))
+  hold_tokens_json JSONB,
+  status TEXT NOT NULL CHECK (
+    status IN (
+      'PENDING_PAYMENT',
+      'WAITING_VERIFY',
+      'CONFIRMED',
+      'PAYMENT_REJECTED',
+      'CANCELLED'
+    )
+  )
 );
 
 CREATE TABLE IF NOT EXISTS booking_seat (
@@ -61,9 +69,24 @@ CREATE TABLE IF NOT EXISTS payment (
   payment_id BIGSERIAL PRIMARY KEY,
   booking_id BIGINT NOT NULL REFERENCES booking(booking_id) ON DELETE CASCADE,
   amount INTEGER NOT NULL CHECK (amount >= 0),
-  status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','PAID','FAILED','EXPIRED')),
+  status TEXT NOT NULL DEFAULT 'PENDING' CHECK (
+    status IN (
+      'PENDING',
+      'WAITING_VERIFY',
+      'APPROVED',
+      'REJECTED',
+      'FAILED',
+      'EXPIRED'
+    )
+  ),
   omise_charge_id TEXT,
   qr_download_uri TEXT,
+  transferred_at TIMESTAMPTZ,
+  submitted_at TIMESTAMPTZ,
+  slip_image_path TEXT,
+  reviewed_at TIMESTAMPTZ,
+  reviewed_by BIGINT REFERENCES app_user(user_id),
+  reject_reason TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   paid_at TIMESTAMPTZ
 );
