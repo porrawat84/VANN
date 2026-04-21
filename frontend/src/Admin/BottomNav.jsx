@@ -42,9 +42,9 @@ export default function BottomNav({ goPage, currentPage }) {
                 />
             </span>
 
-            <span onClick={() => handleClick("profile")}>
+            <span onClick={() => handleClick("adminProfile")}>
                 <img
-                    src={currentPage === "profile" ? profileSelect : profile}
+                    src={currentPage === "adminProfile" ? profileSelect : profile}
                     alt=""
                 />
             </span>
