@@ -12,6 +12,7 @@ import AdminLocation from "./Admin/Location";
 import Dataseat from "./Admin/Dataseat";
 import AdminDashboardChat from "./Admin/DashboardChat";
 import AdminChatRoom from "./Admin/ChatRoom";
+import AdminProfile from "./Admin/Profile";
 
 function bangkokYMD() {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -253,6 +254,8 @@ export default function App() {
         userId={userId}
       />
     ),
+
+    adminProfile: <AdminProfile goPage={goTo} />,
 
   };
 
