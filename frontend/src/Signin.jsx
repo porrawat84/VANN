@@ -12,31 +12,6 @@ export default function Signin({ goSignup, goForget, notify, goLocation, goAdmin
         password: ""
     });
 
-    useEffect(() => {
-        if (!window.tcp?.onMessage) return;
-
-        const handler = (msg) => {
-            if (msg.type === "SIGN_IN_OK") {
-                localStorage.setItem("userId", msg.userId);
-                localStorage.setItem("role", msg.role);
-
-                if (msg.role === "ADMIN") {
-                    goAdmin();
-                } else {
-                    goLocation();
-                }
-            }
-
-            if (msg.type === "SIGN_IN_FAIL") {
-                notify?.("อีเมลหรือรหัสผ่านไม่ถูกต้อง", "error");
-            }
-        };
-
-        const unsubscribe = window.tcp.onMessage(handler);
-
-        return () => unsubscribe();
-    }, [goAdmin, goLocation, notify]);
-
     // ฟังก์ชันจับการเปลี่ยนแปลงเวลาผู้ใช้พิมพ์
     const handleChange = (e) => {
         setFormData({
@@ -84,11 +59,6 @@ export default function Signin({ goSignup, goForget, notify, goLocation, goAdmin
             goLocation();
         }
         };
-
-
-
-
-
 
     return (
         <div className="app" style={{

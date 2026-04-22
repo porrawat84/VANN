@@ -96,21 +96,28 @@ export default function App() {
     return `${bangkokYMD()}_${dest}_${hhmm}`;
   };
 
-  const didInit = useRef(false);
+  //const didInit = useRef(false);
   const didHello = useRef(false);
+    //if (didInit.current) return;อยู่ในuseEffect
+    //didInit.current = true;อยู่ในuseEffect
 
+    //window.tcp.offAllMessages?.();
   useEffect(() => {
-    if (!window.tcp) return;
+    if (!window.tcp?.onMessage) {
+      console.error("window.tcp.onMessage not available");
+      return;
+    }
 
-    if (didInit.current) return;
-    didInit.current = true;
-
-    window.tcp.offAllMessages?.();
+    console.log("App listener attached");
 
     const handler = (msg) => {
       console.log("TCP message from server:", msg);
 
-      // ส่งให้ pending callback ก่อนเสมอ (รวมถึง ERROR ที่มี requestId)
+      if (msg.type === "IPC_TEST") {
+        console.log("Renderer got IPC_TEST:", msg);
+        return;
+      }
+
       const cb = msg.requestId && pendingRef.current.get(msg.requestId);
       if (cb) return cb(msg);
 
@@ -135,13 +142,10 @@ export default function App() {
         if (msg.name) localStorage.setItem("name", msg.name);
         if (msg.phone) localStorage.setItem("phone", msg.phone);
 
-        if (!didHello.current) {
-          didHello.current = true;
-          window.tcp.send({ type: "HELLO", userId: id, role: msg.role || "USER" });
-        }
+        window.tcp.send({ type: "HELLO", userId: id, role: msg.role || "USER" });
 
         if (msg.role === "ADMIN") {
-          setPage("admin");
+          setPage("adminHome");
         } else {
           setPage("location");
         }
@@ -150,22 +154,13 @@ export default function App() {
       if (msg.type === "SIGN_IN_FAIL") {
         notify("อีเมลหรือรหัสผ่านไม่ถูกต้อง", "error");
       }
+
       if (msg.type === "HELLO_OK") setConnected(true);
-      if (msg.type === "HELLO_FAIL") console.log("HELLO_FAIL:", msg.code);
     };
 
     const unsubscribe = window.tcp.onMessage(handler);
-    // ขอ trips
-    window.tcp.send({ type: "GET_TODAY_TRIPS" });
 
-    // ถ้ามี userId ค้างไว้ ค่อย HELLO (สำคัญมาก! ไม่งั้น server ไม่รู้จัก user → payment ล้มเหลว)
-    const stored = localStorage.getItem("userId");
-    const uid = stored ? Number(stored) : null;
-    if (Number.isFinite(uid) && !didHello.current) {
-      didHello.current = true;
-      const role = localStorage.getItem("role") || "USER";
-      window.tcp.send({ type: "HELLO", userId: uid, role });
-    }
+    window.tcp.send({ type: "GET_TODAY_TRIPS" });
 
     return () => unsubscribe?.();
   }, []);
@@ -193,7 +188,7 @@ export default function App() {
   const [selectedChat, setSelectedChat] = useState(null);
 
   const goTo = (nextPage, data = null) => {
-    if (data) setSelectedChat(data);   // 🔥 เก็บตรงนี้ก็ได้
+    if (data) setSelectedChat(data); 
     setPage(nextPage);
   };
 

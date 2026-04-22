@@ -21,6 +21,13 @@ function connectTCP() {
     }
 });
 
+setTimeout(() => {
+  if (win && !win.isDestroyed()) {
+    console.log("Sending IPC test to renderer");
+    win.webContents.send("tcp-message", { type: "IPC_TEST", message: "hello from main" });
+  }
+}, 3000); //test
+
   socket.setEncoding("utf8");
   socket.on("data", (chunk) => {
     buffer += chunk;

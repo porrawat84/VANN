@@ -41,7 +41,6 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
   const [showSummary, setShowSummary] = useState(false);
   const [bookingData, setBookingData] = useState(null);
   const [creatingBooking, setCreatingBooking] = useState(false);
-  const [currentBookingId, setCurrentBookingId] = useState(null);
 
   const holdTokensRef = useRef({});
 
@@ -122,16 +121,21 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
 
     try {
       setCreatingBooking(true);
-
       holdTokensRef.current = {};
 
-      // HOLD อย่างเดียว ยังไม่ CONFIRM
+      console.log("STEP 1: start HOLD", bookingData);
+
       for (const seatId of bookingData.seats) {
+        console.log("STEP 1.1: HOLD seat", seatId);
+
         const holdMsg = await tcpRequest({
           type: "HOLD",
           tripId: bookingData.tripId,
           seat: seatId,
+          userId: Number(userId),
         });
+
+        console.log("STEP 1.2: HOLD response", holdMsg);
 
         if (holdMsg.type !== "HOLD_OK") {
           notify(`จองที่นั่ง ${seatId} ไม่สำเร็จ: ${holdMsg.code || holdMsg.message || "unknown"}`, "error");
@@ -141,24 +145,42 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
         holdTokensRef.current[seatId] = holdMsg.holdToken;
       }
 
-      // CREATE_BOOKING ให้เป็น PENDING_PAYMENT
+      console.log("STEP 2: CREATE_BOOKING request", {
+        tripId: bookingData.tripId,
+        seats: bookingData.seats,
+        totalPriceBaht: bookingData.price,
+        holdTokens: holdTokensRef.current,
+        userId: Number(userId),
+      });
+
       const bookingRes = await tcpRequest({
         type: "CREATE_BOOKING",
         tripId: bookingData.tripId,
         seats: bookingData.seats,
         totalPriceBaht: bookingData.price,
         holdTokens: holdTokensRef.current,
+        userId: Number(userId),
       });
+
+      console.log("STEP 2.1: CREATE_BOOKING response", bookingRes);
 
       if (bookingRes.type !== "CREATE_BOOKING_OK") {
         notify(`สร้าง booking ไม่สำเร็จ: ${bookingRes.code || bookingRes.message || "unknown"}`, "error");
         return;
       }
 
+      console.log("STEP 3: PAYMENT_CREATE_PROMPTPAY request", {
+        bookingId: bookingRes.bookingId,
+        userId: Number(userId),
+      });
+
       const paymentRes = await tcpRequest({
         type: "PAYMENT_CREATE_PROMPTPAY",
         bookingId: bookingRes.bookingId,
+        userId: Number(userId),
       });
+
+      console.log("STEP 3.1: PAYMENT_CREATE_PROMPTPAY response", paymentRes);
 
       if (paymentRes.type !== "PAYMENT_QR") {
         notify(paymentRes.code || "สร้าง QR payment ไม่สำเร็จ", "error");
@@ -178,20 +200,10 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
         phone: bookingData.phone,
       });
 
-      if (paymentTimerRef.current) clearInterval(paymentTimerRef.current);
-      paymentTimerRef.current = setInterval(() => {
-        setPaymentSecondsLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(paymentTimerRef.current);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
       tcpSend({ type: "LIST_SEATS", tripId: bookingData.tripId });
+
     } catch (e) {
-      console.error(e);
+      console.error("handleSummaryConfirm ERROR:", e);
       notify("เชื่อมต่อผิดพลาด กรุณาลองใหม่", "error");
     } finally {
       setCreatingBooking(false);

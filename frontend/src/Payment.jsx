@@ -190,7 +190,7 @@ export default function Payment({ data, tcpRequest, notify, goBack, goDone }) {
               alt="slip preview"
               style={{
                 width: "100%",
-                maxHeight: "180px",
+                maxHeight: "140px",
                 objectFit: "contain",
                 borderRadius: "12px",
                 marginBottom: "10px",

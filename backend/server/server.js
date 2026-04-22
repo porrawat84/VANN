@@ -255,7 +255,7 @@ const server = net.createServer((socket) => {
             reply({ type: "ERROR", code: open.code });
             continue;
           }
-
+          console.log("SERVER STEP: CREATE_BOOKING received", msg); //test
           try {
             const totalPriceSatang = Math.round(Number(msg.totalPriceBaht) * 100);
             const r = await createBooking({
@@ -377,6 +377,7 @@ const server = net.createServer((socket) => {
         }
 
         if (msg.type === "PAYMENT_CREATE_PROMPTPAY") {
+          console.log("SERVER STEP: PAYMENT_CREATE_PROMPTPAY received", msg); //test
           if (actorUserId == null) {
             reply({ type: "ERROR", code: "AUTH_REQUIRED" });
             continue;
