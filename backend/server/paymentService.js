@@ -384,10 +384,48 @@ async function rejectPayment({ bookingId, adminUserId, reason }) {
   }
 }
 
+async function getPaymentSlipData({ paymentId }) {
+  const { rows } = await pool.query(
+    `SELECT payment_id, slip_image_path
+     FROM payment
+     WHERE payment_id = $1`,
+    [paymentId]
+  );
+
+  if (rows.length === 0) {
+    return { ok: false, code: "NO_PAYMENT" };
+  }
+
+  const slipPath = rows[0].slip_image_path;
+  if (!slipPath) {
+    return { ok: false, code: "NO_SLIP_PATH" };
+  }
+
+  if (!fs.existsSync(slipPath)) {
+    return { ok: false, code: "SLIP_FILE_NOT_FOUND" };
+  }
+
+  const ext = path.extname(slipPath).toLowerCase();
+  let mime = "image/png";
+  if (ext === ".jpg" || ext === ".jpeg") mime = "image/jpeg";
+  if (ext === ".webp") mime = "image/webp";
+
+  const base64 = fs.readFileSync(slipPath).toString("base64");
+  const dataUrl = `data:${mime};base64,${base64}`;
+
+  return {
+    ok: true,
+    paymentId,
+    dataUrl,
+    slipPath,
+  };
+}
+
 module.exports = {
   createManualPromptPayQR,
   submitPaymentSlip,
   getPendingPayments,
+  getPaymentSlipData,
   approvePayment,
   rejectPayment,
 };

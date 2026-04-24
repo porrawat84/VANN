@@ -1,31 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./Dataseat.css";
 import BottomNav from "./BottomNav";
 
 
-export default function Dataseat({ goPage }) {
+export default function Dataseat({ goPage, tcpRequest, notify }) {
     const [time, setTime] = useState("10:00");
     const [filter, setFilter] = useState("all");
 
-    const [seats, setSeats] = useState([
-        { id: "A1", name: "nongvanda01", phone: "099-999-9999", price: 20, status: "success", slip: "/slips/a1.png" },
-        { id: "A2", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "B1", name: "somshudtocom", phone: "099-999-8888", price: 20, status: "waiting", slip: "/slips/b1.png" },
-        { id: "B2", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "B3", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "C1", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "C2", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "C3", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "D1", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "D2", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "D3", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "E1", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "E2", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "E3", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-    ]);
-
-    // popup รูป
+    const [payments, setPayments] = useState([]);
     const [selectedSlip, setSelectedSlip] = useState(null);
+    const [loading, setLoading] = useState(false);
 
     const [editingId, setEditingId] = useState(null);
     const [draft, setDraft] = useState({});
@@ -68,21 +52,107 @@ export default function Dataseat({ goPage }) {
         .filter(s => s.status === "success")
         .reduce((sum, s) => sum + (Number(s.price) || 0), 0);
 
+    const openSlip = async (paymentId) => {
+        try {
+            const res = await tcpRequest({
+            type: "ADMIN_GET_PAYMENT_SLIP",
+            paymentId,
+            });
+
+            if (res.type !== "ADMIN_PAYMENT_SLIP") {
+            notify?.(res.code || "เปิดสลิปไม่สำเร็จ", "error");
+            return;
+            }
+
+            setSelectedSlip(res.dataUrl);
+        } catch (e) {
+            console.error(e);
+            notify?.("ดึงรูปสลิปไม่สำเร็จ", "error");
+        }
+        };
+            
+    const approvePayment = async (bookingId) => {
+        try {
+            const res = await tcpRequest({
+            type: "ADMIN_APPROVE_PAYMENT",
+            bookingId,
+            });
+
+            if (res.type !== "ADMIN_APPROVE_PAYMENT_OK") {
+            notify?.(res.code || "อนุมัติไม่สำเร็จ", "error");
+            return;
+            }
+
+            notify?.("อนุมัติการชำระเงินแล้ว", "info");
+            setPayments((prev) => prev.filter((p) => p.booking_id !== bookingId));
+            setSelectedSlip(null);
+        } catch (e) {
+            console.error(e);
+            notify?.("อนุมัติไม่สำเร็จ", "error");
+        }
+        };
+
+        const rejectPayment = async (bookingId) => {
+        try {
+            const res = await tcpRequest({
+            type: "ADMIN_REJECT_PAYMENT",
+            bookingId,
+            reason: "manual reject by admin",
+            });
+
+            if (res.type !== "ADMIN_REJECT_PAYMENT_OK") {
+            notify?.(res.code || "ปฏิเสธไม่สำเร็จ", "error");
+            return;
+            }
+
+            notify?.("ปฏิเสธการชำระเงินแล้ว", "info");
+            setPayments((prev) => prev.filter((p) => p.booking_id !== bookingId));
+            setSelectedSlip(null);
+        } catch (e) {
+            console.error(e);
+            notify?.("ปฏิเสธไม่สำเร็จ", "error");
+        }
+        };
+
+    useEffect(() => {
+        const loadPending = async () => {
+            try {
+            setLoading(true);
+            const res = await tcpRequest({
+                type: "ADMIN_GET_PENDING_PAYMENTS",
+            });
+
+            if (res.type !== "PENDING_PAYMENTS") {
+                notify?.(res.code || "โหลดรายการรอตรวจสอบไม่สำเร็จ", "error");
+                return;
+            }
+
+            setPayments(res.payments || []);
+            } catch (e) {
+            console.error(e);
+            notify?.("โหลดรายการแอดมินไม่สำเร็จ", "error");
+            } finally {
+            setLoading(false);
+            }
+        };
+
+        loadPending();
+        }, [tcpRequest, notify]);
 
     return (
         <div className="app">
 
-            {/* 🔙 BACK */}
+            {/* BACK */}
             <button className="back-btn" onClick={() => goPage("adminLocation")}>
                 ⬅
             </button>
 
-            {/* 🟡 TITLE */}
+            {/* TITLE */}
             <div className="location-title">
                 future park rangsit
             </div>
 
-            {/* 🔵 FILTER */}
+            {/* FILTER */}
             <div className="filter-box">
                 <div>
                     Time :
@@ -108,7 +178,7 @@ export default function Dataseat({ goPage }) {
                 </div>
             </div>
 
-            {/* 📋 TABLE */}
+            {/* TABLE */}
             <div className="table-wrapper">
                 <table className="seat-table">
                     <thead>
@@ -120,121 +190,50 @@ export default function Dataseat({ goPage }) {
                     </thead>
 
                     <tbody>
-                        {filteredSeats.map((s) => (
-                            <tr key={s.id}>
-                                <td>{s.id}</td>
+                        {loading ? (
+                            <tr>
+                            <td colSpan="3">loading...</td>
+                            </tr>
+                        ) : payments.length === 0 ? (
+                            <tr>
+                            <td colSpan="3">no pending payments</td>
+                            </tr>
+                        ) : (
+                            payments.map((p) => (
+                            <tr key={p.payment_id}>
+                                <td>{p.booking_id}</td>
 
-                                {/* 🟡 INFORMATION */}
                                 <td>
-                                    {editingId === s.id ? (
-                                        <>
-                                            username :
-                                            <input
-                                                value={draft.name}
-                                                onChange={(e) =>
-                                                    setDraft({ ...draft, name: e.target.value })
-                                                }
-                                            />
-                                            <br />
-
-                                            phone :
-                                            <input
-                                                value={draft.phone}
-                                                onChange={(e) =>
-                                                    setDraft({ ...draft, phone: e.target.value })
-                                                }
-                                            />
-                                            <br />
-
-                                            price :
-                                            <input
-                                                value={draft.price}
-                                                onChange={(e) =>
-                                                    setDraft({ ...draft, price: e.target.value })
-                                                }
-                                            />
-                                        </>
-                                    ) : (
-                                        <>
-                                            username : {s.name} <br />
-                                            phone : {s.phone} <br />
-                                            price : {s.price}
-                                        </>
-                                    )}
-
-                                    {/* 🔘 EDIT BUTTON */}
-                                    {editingId === s.id ? (
-                                        <div className="btn-groupedit">
-                                            <button
-                                                className="btn save"
-                                                onClick={() => {
-                                                    setSeats((prev) =>
-                                                        prev.map((seat) =>
-                                                            seat.id === s.id ? draft : seat
-                                                        )
-                                                    );
-                                                    setEditingId(null);
-                                                }}
-                                            >
-                                                save
-                                            </button>
-
-                                            <button
-                                                className="btn cancel" onClick={() => setEditingId(null)}>
-                                                cancel
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <button
-                                            className="btn edit"
-                                            onClick={() => {
-                                                setEditingId(s.id);
-                                                setDraft(s);
-                                            }}
-                                        >
-                                            edit
-                                        </button>
-                                    )}
+                                username : {p.name} <br />
+                                phone : {p.phone || "-"} <br />
+                                trip : {p.trip_id} <br />
+                                amount : {(Number(p.amount) / 100).toFixed(2)} ฿
                                 </td>
 
-
-                                {/* 💰 PAYMENT */}
                                 <td>
-                                    <select
-                                        className={`status ${s.status}`}
-                                        value={s.status}
-                                        onChange={(e) => {
-                                            const newStatus = e.target.value;
-                                            setSeats((prev) =>
-                                                prev.map((seat) =>
-                                                    seat.id === s.id
-                                                        ? { ...seat, status: newStatus }
-                                                        : seat
-                                                )
-                                            );
-                                        }}
-                                    >
-                                        <option value="empty">no select</option>
-                                        <option value="waiting">waiting</option>
-                                        <option value="success">success</option>
-                                    </select>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                    <div>waiting verify</div>
 
-                                    {/* 👉 ปุ่มดูสลิป */}
-                                    {s.slip && (
-                                        <button
-                                            className="slip-btn"
-                                            onClick={() => setSelectedSlip(s.slip)}
-                                        >
-                                            🖼
-                                        </button>
-                                    )}
+                                    <button className="slip-btn" onClick={() => openSlip(p.payment_id)}>
+                                    🖼 view slip
+                                    </button>
+
+                                    <button className="btn save" onClick={() => approvePayment(p.booking_id)}>
+                                    approve
+                                    </button>
+
+                                    <button className="btn cancel" onClick={() => rejectPayment(p.booking_id)}>
+                                    reject
+                                    </button>
+                                </div>
                                 </td>
                             </tr>
-                        ))}
-                    </tbody>
+                            ))
+                        )}
+                        </tbody>
                 </table>
             </div>
-            {/* 👉 popup รูป */}
+            {/* popup รูป */}
             {selectedSlip && (
                 <div className="popup" onClick={() => setSelectedSlip(null)}>
                     <div className="popup-content">

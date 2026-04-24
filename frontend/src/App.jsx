@@ -248,7 +248,7 @@ export default function App() {
     //Admin
     adminHome: <AdminHome goPage={goTo} />,
     adminLocation: <AdminLocation goPage={goTo} />,
-    dataseat: <Dataseat goPage={goTo} />,
+    dataseat: <Dataseat goPage={goTo} tcpRequest={tcpRequest} notify={notify} />,
 
     adminDashboardChat: (
       <AdminDashboardChat

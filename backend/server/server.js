@@ -4,7 +4,14 @@ require("dotenv").config();
 const { listSeats, holdSeat, confirmSeat, releaseExpiredHolds } = require("./seatService");
 const { createBooking, getBookings, getBookingDetail } = require("./bookingService");
 const { sendChat, getChatHistory } = require("./chatService");
-const { createManualPromptPayQR, submitPaymentSlip, getPendingPayments, approvePayment, rejectPayment} = require("./paymentService");
+const {
+  createManualPromptPayQR,
+  submitPaymentSlip,
+  getPendingPayments,
+  getPaymentSlipData,
+  approvePayment,
+  rejectPayment
+} = require("./paymentService");
 const { isBookingOpen } = require("./tripUtil");
 const { registerUser, loginUser, getUserRole } = require("./authService");
 const { DESTS, TIMES, bangkokNow, makeTripId } = require("./tripUtil");
@@ -445,6 +452,29 @@ const server = net.createServer((socket) => {
 
           const rows = await getPendingPayments();
           reply({ type: "PENDING_PAYMENTS", payments: rows });
+          continue;
+        }
+
+        if (msg.type === "ADMIN_GET_PAYMENT_SLIP") {
+          if (clientInfo.role !== "ADMIN") {
+            reply({ type: "ERROR", code: "FORBIDDEN" });
+            continue;
+          }
+
+          const r = await getPaymentSlipData({
+            paymentId: msg.paymentId,
+          });
+
+          if (!r.ok) {
+            reply({ type: "ADMIN_GET_PAYMENT_SLIP_FAIL", code: r.code });
+            continue;
+          }
+
+          reply({
+            type: "ADMIN_PAYMENT_SLIP",
+            paymentId: r.paymentId,
+            dataUrl: r.dataUrl,
+          });
           continue;
         }
 
