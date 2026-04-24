@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import "./ChatRoom.css";
-import BottomNav from "./BottomNav";
+import "./UserChat.css";
 
 function formatDayTag(v) {
   if (!v) return "";
@@ -10,21 +9,18 @@ function formatDayTag(v) {
   return `${dd}/${mm}`;
 }
 
-export default function ChatRoom({ goBack, chat, goPage, tcpRequest, notify }) {
+export default function UserChat({ goBack, tcpRequest, notify }) {
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
+  const [text, setText] = useState("");
   const bottomRef = useRef(null);
 
   const loadHistory = async () => {
-    if (!chat?.user_id) return;
-
     try {
       const res = await tcpRequest({
-        type: "ADMIN_CHAT_HISTORY",
-        targetUserId: chat.user_id,
+        type: "CHAT_HISTORY",
       });
 
-      if (res.type !== "ADMIN_CHAT_HISTORY_OK") {
+      if (res.type !== "CHAT_HISTORY_OK") {
         notify?.(res.code || "โหลดประวัติแชทไม่สำเร็จ", "error");
         return;
       }
@@ -39,13 +35,13 @@ export default function ChatRoom({ goBack, chat, goPage, tcpRequest, notify }) {
   useEffect(() => {
     loadHistory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chat?.user_id]);
+  }, []);
 
   useEffect(() => {
-    if (!window.tcp?.onMessage || !chat?.user_id) return;
+    if (!window.tcp?.onMessage) return;
 
     const unsub = window.tcp.onMessage((msg) => {
-      if (msg.type === "EVENT_CHAT" && Number(msg.userId) === Number(chat.user_id)) {
+      if (msg.type === "EVENT_CHAT") {
         setMessages((prev) => [
           ...prev,
           {
@@ -60,20 +56,19 @@ export default function ChatRoom({ goBack, chat, goPage, tcpRequest, notify }) {
     });
 
     return () => unsub?.();
-  }, [chat?.user_id]);
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const sendMessage = async () => {
-    const message = input.trim();
-    if (!message || !chat?.user_id) return;
+    const message = text.trim();
+    if (!message) return;
 
     try {
       const res = await tcpRequest({
         type: "CHAT_SEND",
-        targetUserId: chat.user_id,
         message,
       });
 
@@ -82,7 +77,7 @@ export default function ChatRoom({ goBack, chat, goPage, tcpRequest, notify }) {
         return;
       }
 
-      setInput("");
+      setText("");
     } catch (e) {
       console.error(e);
       notify?.("ส่งข้อความไม่สำเร็จ", "error");
@@ -90,45 +85,49 @@ export default function ChatRoom({ goBack, chat, goPage, tcpRequest, notify }) {
   };
 
   return (
-    <div className="app-chatroom">
-      <div className="chatroom-top">
-        <button className="back-btn" onClick={goBack}>⬅</button>
-        <h1 className="chat-username">{chat?.name || "Chat"}</h1>
-      </div>
+    <div className="user-chat-page">
+      <div className="user-chat-logo">VANN</div>
 
-      <div className="chatroom-container">
-        <div className="chat-messages">
-          <div className="chat-date">
+      <div className="user-chat-card">
+        <button className="user-chat-close" onClick={goBack}>×</button>
+        <div className="user-chat-title">chat</div>
+
+        <div className="user-chat-box">
+          <div className="date-chip">
             {messages.length ? formatDayTag(messages[0].created_at) : "--/--"}
           </div>
 
-          {messages.map((m) => {
-            const mine = m.sender === "ADMIN";
-            return (
-              <div key={m.chat_id} className={`chat-row ${mine ? "me" : "other"}`}>
-                {!mine && <div className="avatar" />}
-                <div className="bubble">{m.message}</div>
-                {mine && <div className="avatar" />}
-              </div>
-            );
-          })}
-          <div ref={bottomRef} />
+          <div className="bubble-list">
+            {messages.map((m) => {
+              const mine = m.sender === "USER";
+              return (
+                <div
+                  key={m.chat_id}
+                  className={`bubble-row ${mine ? "mine" : "theirs"}`}
+                >
+                  {!mine && <div className="bubble-avatar purple" />}
+                  <div className="bubble">{m.message}</div>
+                  {mine && <div className="bubble-avatar blue" />}
+                </div>
+              );
+            })}
+            <div ref={bottomRef} />
+          </div>
         </div>
 
-        <div className="chat-input">
+        <div className="user-input-wrap">
           <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
+            className="user-chat-input"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
             placeholder=""
             onKeyDown={(e) => {
               if (e.key === "Enter") sendMessage();
             }}
           />
-          <button className="send-btn" onClick={sendMessage}>➤</button>
+          <button className="user-chat-send" onClick={sendMessage}>➤</button>
         </div>
       </div>
-
-      <BottomNav goPage={goPage} />
     </div>
   );
 }

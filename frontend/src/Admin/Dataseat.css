@@ -1,210 +1,89 @@
-.app {
-    width: 100%;
-    max-width: 420px;
-    /* จำกัดไม่ให้ใหญ่เกิน */
-    padding: 30px;
-    display: block;
-    justify-content: center;
-    background:#F0F0F0;
-    height: 100vh;
-    overflow-y: auto;
-
-
-    position: relative; 
-    padding-bottom: 90px; /* ไม่งั้น table จะโดน nav ทับ */
+.dashboard-chat-page {
+  min-height: 100vh;
+  background: #efefef;
+  padding: 28px 22px 110px;
+  box-sizing: border-box;
 }
 
-
-.back-btn {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    padding: 10px 18px;
-    border-radius: 20px;
-    border: 1px solid black;
-    background-color: #fff6a8;
-    color: #111;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 3px 0 rgba(0,0,0,0.15);
+.chat-title-pill {
+  width: 240px;
+  margin: 0 auto 18px;
+  background: #f3e89d;
+  border: 2px solid #3d3d3d;
+  border-radius: 24px;
+  text-align: center;
+  padding: 16px 12px;
+  font-size: 22px;
+  font-weight: 800;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.18);
 }
 
-.location-title {
-    font-family: 'Grandstander', cursive;
-    padding: 10px;
-    width: 300px;
-    border-radius: 999px;
-    border: 1px solid black;
-    font-weight: 100%;
-    font-size: 25px;
-    background: #fff4b0;
-    box-shadow: 0 3px 4px 0px rgb(56, 56, 5);
-    cursor: pointer;
-    color: #111;
-    text-align: center;
-    cursor: pointer;
-
-
-    margin: 10% auto 4% auto;
+.chat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-/* filter box */
-.filter-box {
-    width: 90%;
-    background: #CEEBFF;
-    border-radius: 30px;
-    padding: 13px;
-    margin: 10px auto 1px auto;
-    display: flex;
-    justify-content: space-around;
-    border: 1px solid black;
-    box-shadow: 0 2px 3px rgb(56, 56, 56);
-
-    font-size: 17px;
-    font-weight: 50px;
-
+.chat-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+  cursor: pointer;
 }
 
-.filter-box select {
-    margin: 5px;
-    padding: 5px;
-    border-radius: 10px;
+.avatar-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: #79baf2;
+  flex-shrink: 0;
 }
 
-/* table */
-.seat-table {
-    width: 100%;
-    margin: 5% auto;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0px 3px 4px rgb(56, 56, 56);
+.chat-main {
+  flex: 1;
+  min-width: 0;
 }
 
-.seat-table th {
-    background: #f5f5f5;
+.chat-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: #243a63;
+  margin-bottom: 4px;
 }
 
-.seat-table th,
-.seat-table td {
-    border: 1px solid #ccc;
-    padding: 10px;
-    font-size: 12px;
+.chat-preview {
+  font-size: 14px;
+  color: #8a8a8a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* status */
-.status {
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 10px;
-    border: 1px solid black;
-    width: 80px;
+.chat-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
 }
 
-.status.success {
-    background: #b6f5b6;
+.chat-date {
+  font-size: 12px;
+  color: #8d8d8d;
 }
 
-.status.waiting {
-    background: #ffe08a;
-}
-
-.status.empty {
-    background: #ddd;
-}
-
-.summary-box {
-    width: 90%;
-    margin: 15px auto;
-    padding: 15px;
-
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-
-    font-size: 14px;
-    font-weight: 600;
-}
-
-/* แยกสีแต่ละค่า */
-.summary-box div:nth-child(1) {
-    color: #333;
-}
-
-.summary-box div:nth-child(2) {
-    color: #333;
-}
-
-.summary-box div:nth-child(3) {
-    color: #333;
-}
-
-.summary-box div:nth-child(4) {
-    color: #333;
-}
-
-
-/*css สำหรับ popup รูป*/
-.slip-btn {
-    margin-left: 8px;
-    cursor: pointer;
-    border: none;
-    background: transparent;
-    font-size: 15px;
-}
-
-.popup {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.popup-content img {
-    max-width: 300px;
-    border-radius: 10px;
-}
-
-
-/* edit */
-.btn.edit {
-    background: #e0dcdc;
-    padding: 1px 5px;   /* 🔥 ลดขนาดปุ่ม */
-    font-size: 11px;      /* 🔥 ตัวหนังสือเล็กลง */
-    border-radius: 5px;
-    width: 30px;
-    border: 1px solid black;
-    height: 20px;
-
-}
-
-/* save */
-.btn.save {
-    background: #4caf50;
-    color: white;
-    font-size: 11px ;
-    height: 25px;
-    width: 30px;
-}
-
-/* cancel */
-.btn.cancel {
-    background: #f44336;
-    color: white;
-    font-size: 11px ;
-    height: 25px;
-    width: 30px;
-}
-
-/* จัดปุ่มให้อยู่ข้างกัน */
-.btn-groupedit {
-    display: flex;
-    gap: 6px;
-    padding: 4px 2px;
+.chat-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: red;
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

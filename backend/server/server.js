@@ -3,7 +3,7 @@ require("dotenv").config();
 
 const { listSeats, holdSeat, confirmSeat, releaseExpiredHolds } = require("./seatService");
 const { createBooking, getBookings, getBookingDetail } = require("./bookingService");
-const { sendChat, getChatHistory } = require("./chatService");
+const { sendChat, getChatHistory, getAdminChatList } = require("./chatService");
 const {
   createManualPromptPayQR,
   submitPaymentSlip,
@@ -364,44 +364,93 @@ const server = net.createServer((socket) => {
           continue;
         }
 
+        if (msg.type === "ADMIN_CHAT_LIST") {
+          if (clientInfo.role !== "ADMIN") {
+            reply({ type: "ERROR", code: "FORBIDDEN" });
+            continue;
+          }
+
+          const rows = await getAdminChatList();
+          reply({ type: "ADMIN_CHAT_LIST_OK", chats: rows });
+          continue;
+        }
+
+        if (msg.type === "ADMIN_CHAT_HISTORY") {
+          if (clientInfo.role !== "ADMIN") {
+            reply({ type: "ERROR", code: "FORBIDDEN" });
+            continue;
+          }
+
+          const targetUserId = normalizeUserId(msg.targetUserId);
+          if (targetUserId == null) {
+            reply({ type: "ERROR", code: "BAD_USER_ID" });
+            continue;
+          }
+
+          const rows = await getChatHistory(targetUserId, msg.limit || 50);
+          reply({ type: "ADMIN_CHAT_HISTORY_OK", userId: targetUserId, messages: rows });
+          continue;
+        }
+
         // ---- chat realtime
         if (msg.type === "CHAT_SEND") {
           if (!actorUserId) {
-            send(socket, { type: "ERROR", code: "AUTH_REQUIRED" });
+            reply({ type: "ERROR", code: "AUTH_REQUIRED" });
             continue;
           }
-          const r = await sendChat({ userId: actorUserId, sender: msg.sender, message: msg.message });
 
-          // push realtime to user + admins
-          broadcastToUser(actorUserId, {
+          const targetUserId =
+            clientInfo.role === "ADMIN"
+              ? normalizeUserId(msg.targetUserId)
+              : actorUserId;
+
+          if (!targetUserId) {
+            reply({ type: "ERROR", code: "BAD_USER_ID" });
+            continue;
+          }
+
+          const sender = clientInfo.role === "ADMIN" ? "ADMIN" : "USER";
+
+          const r = await sendChat({
+            userId: targetUserId,
+            sender,
+            message: msg.message,
+          });
+
+          broadcastToUser(targetUserId, {
             type: "EVENT_CHAT",
-            userId: actorUserId,
-            sender: msg.sender,
+            userId: targetUserId,
+            sender,
             message: msg.message,
             createdAt: r.createdAt,
           });
+
           broadcastToAdmins({
             type: "EVENT_CHAT",
-            userId: actorUserId,
-            sender: msg.sender,
+            userId: targetUserId,
+            sender,
             message: msg.message,
             createdAt: r.createdAt,
           });
 
-          send(socket, { type: "CHAT_SEND_OK", chatId: r.chatId });
+          reply({
+            type: "CHAT_SEND_OK",
+            chatId: r.chatId,
+            userId: targetUserId,
+          });
           continue;
         }
 
         if (msg.type === "CHAT_HISTORY") {
           if (!actorUserId) {
-            send(socket, { type: "ERROR", code: "AUTH_REQUIRED" });
+            reply({ type: "ERROR", code: "AUTH_REQUIRED" });
             continue;
           }
+
           const rows = await getChatHistory(actorUserId, msg.limit || 50);
-          send(socket, { type: "CHAT_HISTORY_OK", userId: actorUserId, messages: rows });
+          reply({ type: "CHAT_HISTORY_OK", userId: actorUserId, messages: rows });
           continue;
         }
-
         if (msg.type === "PAYMENT_CREATE_PROMPTPAY") {
           if (actorUserId == null) {
             reply({ type: "ERROR", code: "AUTH_REQUIRED" });
@@ -559,6 +608,7 @@ const server = net.createServer((socket) => {
           type: "ERROR",
           code: "SERVER_ERROR",
           message: e.message,
+          requestId: msg?.requestId,
         });
       }
     }

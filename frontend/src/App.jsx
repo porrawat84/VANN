@@ -7,6 +7,7 @@ import Seat from "./Seat";
 import Forgetpass from "./Forgetpass";
 import UserBottomNav from './UserBottomNav';
 import Payment from "./Payment";
+import UserChat from "./UserChat";
 
 import AdminBottomNav from "./Admin/BottomNav";
 import AdminHome from "./Admin/Home";
@@ -16,6 +17,8 @@ import AdminDashboardChat from "./Admin/DashboardChat";
 import AdminChatRoom from "./Admin/ChatRoom";
 import AdminProfile from "./Admin/Profile";
 import AdminPayments from "./Admin/AdminPayments";
+import DashboardChat from "./Admin/DashboardChat";
+import ChatRoom from "./Admin/ChatRoom";
 
 function bangkokYMD() {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -216,8 +219,7 @@ export default function App() {
 
     forgetpass: <Forgetpass goBack={() => goTo("signin")} notify={notify} />,
 
-    location: <Location goNext={() => goTo("time")} />,
-
+    location: <Location goNext={() => goTo("time")} goChat={() => goTo("userChat")} />,
     time: <Time goBack={() => goTo("location")} goNext={() => goTo("seat")} />,
 
     seat: (
@@ -244,6 +246,14 @@ export default function App() {
         }}
       />
     ),
+
+    userChat: (
+      <UserChat
+        goBack={() => goTo("location")}
+        tcpRequest={tcpRequest}
+        notify={notify}
+      />
+    ),
     
 
     //Admin
@@ -251,21 +261,15 @@ export default function App() {
     adminLocation: <AdminLocation goPage={goTo} />,
     dataseat: <Dataseat goPage={goTo} tcpRequest={tcpRequest} notify={notify} />,
 
-    adminDashboardChat: (
+   adminDashboardChat: (
       <AdminDashboardChat
         goChat={(chat) => {
           setSelectedChat(chat);
-
-          //ล้าง unread
-          setUnreadMap((prev) => ({
-            ...prev,
-            [chat.id]: 0,
-          }));
-
           goTo("adminChatRoom");
         }}
         goPage={goTo}
-        unreadMap={unreadMap}
+        tcpRequest={tcpRequest}
+        notify={notify}
       />
     ),
 
@@ -274,10 +278,10 @@ export default function App() {
         goPage={goTo}
         goBack={() => goTo("adminDashboardChat")}
         chat={selectedChat}
-        userId={userId}
+        tcpRequest={tcpRequest}
+        notify={notify}
       />
     ),
-
     adminProfile: <AdminProfile goPage={goTo} />,
 
     adminPayments: (

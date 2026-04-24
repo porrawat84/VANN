@@ -1,64 +1,91 @@
+import { useEffect, useState } from "react";
 import "./DashboardChat.css";
-import logo from "./assets/image/logo.png";
 import BottomNav from "./BottomNav";
 
-function DashboardChat({ goPage, goChat, unreadMap }) {
+function formatDateShort(v) {
+  if (!v) return "";
+  const d = new Date(v);
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  return `${dd}/${mm}`;
+}
 
-    const chats = [
-        {
-            id: 1,
-            name: "nongvanda01",
-            last: "booking success !",
-            time: "22/03",
-        },
-        {
-            id: 2,
-            name: "user02",
-            last: "hello",
-            time: "21/03",
-        },
-    ];
+function DashboardChat({ goPage, goChat, tcpRequest, notify }) {
+  const [chats, setChats] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-    return (
-        <div className="app">
+  const loadChats = async () => {
+    try {
+      setLoading(true);
+      const res = await tcpRequest({ type: "ADMIN_CHAT_LIST" });
 
-            <div className="content chat">
-                <div className="chat-box">
-                    <h2 className="chat-title">Message ({chats.length})
-                    </h2>
+      if (res.type !== "ADMIN_CHAT_LIST_OK") {
+        notify?.(res.code || "โหลดรายการแชทไม่สำเร็จ", "error");
+        return;
+      }
 
-                    {chats.map((c) => (
-                        <div
-                            key={c.id}
-                            className="chat-item"
-                            onClick={() => goChat(c)}
-                        >
-                            <div className="avatar" />
+      setChats(res.chats || []);
+    } catch (e) {
+      console.error(e);
+      notify?.("โหลดรายการแชทไม่สำเร็จ", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                            <div className="chat-info">
-                                <div className="chat-name">{c.name}</div>
-                                <div className="chat-last">{c.last}</div>
-                            </div>
+  useEffect(() => {
+    loadChats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-                            {/* 🔥 ด้านขวา */}
-                            <div className="chat-right">
-                                <div className="chat-time">{c.time}</div>
+  useEffect(() => {
+    if (!window.tcp?.onMessage) return;
 
-                                {/* 🔴 unread */}
-                                {unreadMap?.[c.id] > 0 && (
-                                    <div className="unread-badge">
-                                        {unreadMap[c.id]}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ))}
+    const unsub = window.tcp.onMessage((msg) => {
+      if (msg.type === "EVENT_CHAT") {
+        loadChats();
+      }
+    });
+
+    return () => unsub?.();
+  }, []);
+
+  return (
+    <div className="app">
+      <div className="content chat">
+        <div className="chat-box">
+          <h2 className="chat-title">Message ({chats.length})</h2>
+
+          {loading ? (
+            <div className="chat-item">loading...</div>
+          ) : chats.length === 0 ? (
+            <div className="chat-item">no messages</div>
+          ) : (
+            chats.map((c) => (
+              <div
+                key={c.user_id}
+                className="chat-item"
+                onClick={() => goChat(c)}
+              >
+                <div className="avatar" />
+
+                <div className="chat-info">
+                  <div className="chat-name">{c.name || `user${c.user_id}`}</div>
+                  <div className="chat-last">{c.last_message || "-"}</div>
                 </div>
-            </div>
 
-            <BottomNav goPage={goPage} />
+                <div className="chat-right">
+                  <div className="chat-time">{formatDateShort(c.last_created_at)}</div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
-    );
+      </div>
+
+      <BottomNav goPage={goPage} />
+    </div>
+  );
 }
 
 export default DashboardChat;
