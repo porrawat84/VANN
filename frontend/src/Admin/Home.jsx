@@ -25,6 +25,10 @@ function Location({ goPage}) {
                 <button className="btn location" onClick={() => handleSelect("VM")}>
                     Victory Monument
                 </button>
+                
+                <button onClick={() => goPage("adminPayments")}>
+                    payment review
+                </button>
             </div>
             </div>
             <div><BottomNav goPage={goPage} /></div>

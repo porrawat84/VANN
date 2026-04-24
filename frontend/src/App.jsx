@@ -15,6 +15,7 @@ import Dataseat from "./Admin/Dataseat";
 import AdminDashboardChat from "./Admin/DashboardChat";
 import AdminChatRoom from "./Admin/ChatRoom";
 import AdminProfile from "./Admin/Profile";
+import AdminPayments from "./Admin/AdminPayments";
 
 function bangkokYMD() {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -255,7 +256,7 @@ export default function App() {
         goChat={(chat) => {
           setSelectedChat(chat);
 
-          // 🔥 ล้าง unread
+          //ล้าง unread
           setUnreadMap((prev) => ({
             ...prev,
             [chat.id]: 0,
@@ -278,6 +279,14 @@ export default function App() {
     ),
 
     adminProfile: <AdminProfile goPage={goTo} />,
+
+    adminPayments: (
+      <AdminPayments
+        goPage={goTo}
+        tcpRequest={tcpRequest}
+        notify={notify}
+      />
+    ),
 
   };
 

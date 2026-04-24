@@ -138,6 +138,27 @@ async function submitPaymentSlip({
       paymentId = ins.rows[0].payment_id;
     }
 
+    const seatRows = await client.query(
+      `SELECT seat_id
+      FROM booking_seat
+      WHERE booking_id = $1`,
+      [bookingId]
+    );
+
+    for (const row of seatRows.rows) {
+      await client.query(
+        `UPDATE seat_status
+        SET status = 'BOOKED',
+            booked_user_id = $3,
+            booked_at = NOW(),
+            hold_token = NULL,
+            hold_user_id = NULL,
+            hold_expires_at = NULL
+        WHERE trip_id = $1 AND seat_id = $2`,
+        [booking.trip_id, row.seat_id, booking.user_id]
+      );
+    }
+
     await client.query(
       `UPDATE booking
        SET status = 'WAITING_VERIFY'
@@ -212,68 +233,6 @@ async function approvePayment({ bookingId, adminUserId }) {
     if (booking.status !== "WAITING_VERIFY") {
       await client.query("ROLLBACK");
       return { ok: false, code: "BAD_BOOKING_STATUS" };
-    }
-
-    const holdTokens = booking.hold_tokens_json || {};
-
-    for (const [seatId, holdToken] of Object.entries(holdTokens)) {
-      const seatQ = await client.query(
-        `SELECT seat_id, status, hold_user_id, hold_expires_at
-         FROM seat_status
-         WHERE trip_id = $1 AND seat_id = $2
-         FOR UPDATE`,
-        [booking.trip_id, seatId]
-      );
-
-      if (seatQ.rows.length === 0) {
-        await client.query("ROLLBACK");
-        return { ok: false, code: `CONFIRM_FAIL_${seatId}_NO_SEAT_STATUS` };
-      }
-
-      const seatRow = seatQ.rows[0];
-      const now = new Date();
-
-      if (seatRow.status !== "HELD") {
-        await client.query("ROLLBACK");
-        return { ok: false, code: `CONFIRM_FAIL_${seatId}_NOT_HELD` };
-      }
-
-      if (String(seatRow.hold_user_id) !== String(booking.user_id)) {
-        await client.query("ROLLBACK");
-        return { ok: false, code: `CONFIRM_FAIL_${seatId}_NOT_OWNER` };
-      }
-
-      if (seatRow.hold_token !== holdToken) {
-        await client.query("ROLLBACK");
-        return { ok: false, code: `CONFIRM_FAIL_${seatId}_BAD_TOKEN` };
-      }
-
-      if (!seatRow.hold_expires_at || seatRow.hold_expires_at <= now) {
-        await client.query(
-          `UPDATE seat_status
-           SET status = 'FREE',
-               hold_token = NULL,
-               hold_user_id = NULL,
-               hold_expires_at = NULL
-           WHERE trip_id = $1 AND seat_id = $2`,
-          [booking.trip_id, seatId]
-        );
-
-        await client.query("COMMIT");
-        return { ok: false, code: `CONFIRM_FAIL_${seatId}_EXPIRED` };
-      }
-
-      await client.query(
-        `UPDATE seat_status
-         SET status = 'BOOKED',
-             booked_user_id = $3,
-             booked_at = NOW(),
-             hold_token = NULL,
-             hold_user_id = NULL,
-             hold_expires_at = NULL
-         WHERE trip_id = $1 AND seat_id = $2`,
-        [booking.trip_id, seatId, booking.user_id]
-      );
     }
 
     await client.query(

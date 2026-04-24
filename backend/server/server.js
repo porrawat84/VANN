@@ -86,9 +86,12 @@ const server = net.createServer((socket) => {
         const requestedUserId = normalizeUserId(msg.userId);
         const sessionUserId = normalizeUserId(clientInfo.userId);
 
-        // ถ้ามี session แล้ว client ส่ง userId มาไม่ตรง -> reject
         if (sessionUserId != null && requestedUserId != null && requestedUserId !== sessionUserId) {
-          send(socket, { type: "ERROR", code: "USER_MISMATCH" });
+          send(socket, {
+            type: "ERROR",
+            code: "USER_MISMATCH",
+            requestId: msg.requestId,
+          });
           continue;
         }
 
@@ -98,20 +101,36 @@ const server = net.createServer((socket) => {
 
         // ---- session / subscribe
         if (msg.type === "HELLO") {
-          // ต้องมี userId เป็นเลขจริง (หลัง login)
           const uid = normalizeUserId(msg.userId);
           if (uid == null) {
-            send(socket, { type: "HELLO_FAIL", code: "BAD_USER_ID" });
+            send(socket, { type: "HELLO_FAIL", code: "BAD_USER_ID", requestId: msg.requestId });
             continue;
           }
 
           clientInfo.userId = uid;
 
           const wantAdmin = msg.role === "ADMIN";
-          const okAdmin = wantAdmin && msg.adminKey && msg.adminKey === process.env.ADMIN_KEY;
-          clientInfo.role = okAdmin ? "ADMIN" : "USER";
+          const hasValidAdminKey =
+            wantAdmin &&
+            msg.adminKey &&
+            msg.adminKey === process.env.ADMIN_KEY;
 
-          send(socket, { type: "HELLO_OK", userId: uid, role: clientInfo.role, isAdmin: okAdmin });
+          // ถ้า login มาเป็น ADMIN อยู่แล้ว ให้คง role เดิมไว้
+          if (clientInfo.role === "ADMIN") {
+            // keep ADMIN
+          } else if (hasValidAdminKey) {
+            clientInfo.role = "ADMIN";
+          } else {
+            clientInfo.role = "USER";
+          }
+
+          send(socket, {
+            type: "HELLO_OK",
+            userId: uid,
+            role: clientInfo.role,
+            isAdmin: clientInfo.role === "ADMIN",
+            requestId: msg.requestId,
+          });
           continue;
         }
 
@@ -262,7 +281,7 @@ const server = net.createServer((socket) => {
             reply({ type: "ERROR", code: open.code });
             continue;
           }
-          console.log("SERVER STEP: CREATE_BOOKING received", msg); //test
+
           try {
             const totalPriceSatang = Math.round(Number(msg.totalPriceBaht) * 100);
             const r = await createBooking({
@@ -384,7 +403,6 @@ const server = net.createServer((socket) => {
         }
 
         if (msg.type === "PAYMENT_CREATE_PROMPTPAY") {
-          console.log("SERVER STEP: PAYMENT_CREATE_PROMPTPAY received", msg); //test
           if (actorUserId == null) {
             reply({ type: "ERROR", code: "AUTH_REQUIRED" });
             continue;

@@ -1,18 +1,27 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import "./Dataseat.css";
 import BottomNav from "./BottomNav";
 
-
-export default function Dataseat({ goPage, tcpRequest, notify }) {
+export default function Dataseat({ goPage }) {
     const [time, setTime] = useState("10:00");
     const [filter, setFilter] = useState("all");
 
-    const [payments, setPayments] = useState([]);
-    const [selectedSlip, setSelectedSlip] = useState(null);
-    const [loading, setLoading] = useState(false);
-
-    const [editingId, setEditingId] = useState(null);
-    const [draft, setDraft] = useState({});
+    const [seats, setSeats] = useState([
+        { id: "A1", username: "nongvanda01", phone: "099-999-9999", price: 20, status: "success" },
+        { id: "A2", username: "-", phone: "-", price: "-", status: "empty" },
+        { id: "B1", username: "-", phone: "-", price: "-", status: "empty" },
+        { id: "B2", username: "-", phone: "-", price: "-", status: "empty" },
+        { id: "B3", username: "somshydotcom", phone: "099-999-8888", price: 20, status: "waiting" },
+        { id: "C1", username: "-", phone: "-", price: "-", status: "empty" },
+        { id: "C2", username: "-", phone: "-", price: "-", status: "empty" },
+        { id: "C3", username: "-", phone: "-", price: "-", status: "empty" },
+        { id: "D1", username: "-", phone: "-", price: "-", status: "empty" },
+        { id: "D2", username: "-", phone: "-", price: "-", status: "empty" },
+        { id: "D3", username: "-", phone: "-", price: "-", status: "empty" },
+        { id: "E1", username: "-", phone: "-", price: "-", status: "empty" },
+        { id: "E2", username: "-", phone: "-", price: "-", status: "empty" },
+        { id: "E3", username: "-", phone: "-", price: "-", status: "empty" },
+    ]);
 
     const changeStatus = (id) => {
         setSeats((prev) =>
@@ -26,12 +35,11 @@ export default function Dataseat({ goPage, tcpRequest, notify }) {
         );
     };
 
-    // seat filter
-    const filteredSeats = seats.filter((s) => {
+    const filteredSeats = seats.filter((seat) => {
         if (filter === "all") return true;
-        if (filter === "booked") return s.status === "success";
-        if (filter === "available") return s.status === "empty";
-        return s.status === filter;
+        if (filter === "booked") return seat.status === "success";
+        if (filter === "available") return seat.status === "empty";
+        return true;
     });
 
     const getStatusText = (status) => {
@@ -40,119 +48,23 @@ export default function Dataseat({ goPage, tcpRequest, notify }) {
         return "no select";
     };
 
-    //SUMMARY
     const totalSeats = seats.length;
-
-    const availableSeats = seats.filter(s => s.status === "empty").length;
-
-    const bookedSeats = seats.filter(s => s.status === "success").length;
-
-    // รวมเงินเฉพาะ success
+    const availableSeats = seats.filter((s) => s.status === "empty").length;
+    const bookedSeats = seats.filter((s) => s.status === "success").length;
     const totalMoney = seats
-        .filter(s => s.status === "success")
+        .filter((s) => s.status === "success")
         .reduce((sum, s) => sum + (Number(s.price) || 0), 0);
-
-    const openSlip = async (paymentId) => {
-        try {
-            const res = await tcpRequest({
-            type: "ADMIN_GET_PAYMENT_SLIP",
-            paymentId,
-            });
-
-            if (res.type !== "ADMIN_PAYMENT_SLIP") {
-            notify?.(res.code || "เปิดสลิปไม่สำเร็จ", "error");
-            return;
-            }
-
-            setSelectedSlip(res.dataUrl);
-        } catch (e) {
-            console.error(e);
-            notify?.("ดึงรูปสลิปไม่สำเร็จ", "error");
-        }
-        };
-            
-    const approvePayment = async (bookingId) => {
-        try {
-            const res = await tcpRequest({
-            type: "ADMIN_APPROVE_PAYMENT",
-            bookingId,
-            });
-
-            if (res.type !== "ADMIN_APPROVE_PAYMENT_OK") {
-            notify?.(res.code || "อนุมัติไม่สำเร็จ", "error");
-            return;
-            }
-
-            notify?.("อนุมัติการชำระเงินแล้ว", "info");
-            setPayments((prev) => prev.filter((p) => p.booking_id !== bookingId));
-            setSelectedSlip(null);
-        } catch (e) {
-            console.error(e);
-            notify?.("อนุมัติไม่สำเร็จ", "error");
-        }
-        };
-
-        const rejectPayment = async (bookingId) => {
-        try {
-            const res = await tcpRequest({
-            type: "ADMIN_REJECT_PAYMENT",
-            bookingId,
-            reason: "manual reject by admin",
-            });
-
-            if (res.type !== "ADMIN_REJECT_PAYMENT_OK") {
-            notify?.(res.code || "ปฏิเสธไม่สำเร็จ", "error");
-            return;
-            }
-
-            notify?.("ปฏิเสธการชำระเงินแล้ว", "info");
-            setPayments((prev) => prev.filter((p) => p.booking_id !== bookingId));
-            setSelectedSlip(null);
-        } catch (e) {
-            console.error(e);
-            notify?.("ปฏิเสธไม่สำเร็จ", "error");
-        }
-        };
-
-    useEffect(() => {
-        const loadPending = async () => {
-            try {
-            setLoading(true);
-            const res = await tcpRequest({
-                type: "ADMIN_GET_PENDING_PAYMENTS",
-            });
-
-            if (res.type !== "PENDING_PAYMENTS") {
-                notify?.(res.code || "โหลดรายการรอตรวจสอบไม่สำเร็จ", "error");
-                return;
-            }
-
-            setPayments(res.payments || []);
-            } catch (e) {
-            console.error(e);
-            notify?.("โหลดรายการแอดมินไม่สำเร็จ", "error");
-            } finally {
-            setLoading(false);
-            }
-        };
-
-        loadPending();
-        }, [tcpRequest, notify]);
 
     return (
         <div className="app">
-
-            {/* BACK */}
             <button className="back-btn" onClick={() => goPage("adminLocation")}>
                 ⬅
             </button>
 
-            {/* TITLE */}
             <div className="location-title">
                 future park rangsit
             </div>
 
-            {/* FILTER */}
             <div className="filter-box">
                 <div>
                     Time :
@@ -178,7 +90,10 @@ export default function Dataseat({ goPage, tcpRequest, notify }) {
                 </div>
             </div>
 
-            {/* TABLE */}
+            <button className="seat-map-btn" onClick={() => goPage("adminSeatMap")}>
+                Seat Maps
+            </button>
+
             <div className="table-wrapper">
                 <table className="seat-table">
                     <thead>
@@ -190,64 +105,38 @@ export default function Dataseat({ goPage, tcpRequest, notify }) {
                     </thead>
 
                     <tbody>
-                        {loading ? (
-                            <tr>
-                            <td colSpan="3">loading...</td>
-                            </tr>
-                        ) : payments.length === 0 ? (
-                            <tr>
-                            <td colSpan="3">no pending payments</td>
-                            </tr>
-                        ) : (
-                            payments.map((p) => (
-                            <tr key={p.payment_id}>
-                                <td>{p.booking_id}</td>
-
+                        {filteredSeats.map((seat) => (
+                            <tr key={seat.id}>
+                                <td>{seat.id}</td>
                                 <td>
-                                username : {p.name} <br />
-                                phone : {p.phone || "-"} <br />
-                                trip : {p.trip_id} <br />
-                                amount : {(Number(p.amount) / 100).toFixed(2)} ฿
+                                    username : {seat.username} <br />
+                                    phone : {seat.phone} <br />
+                                    price : {seat.price}
                                 </td>
-
                                 <td>
-                                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                                    <div>waiting verify</div>
-
-                                    <button className="slip-btn" onClick={() => openSlip(p.payment_id)}>
-                                    🖼 view slip
+                                    <button
+                                        className={`status-btn ${seat.status}`}
+                                        onClick={() => changeStatus(seat.id)}
+                                    >
+                                        {getStatusText(seat.status)}
                                     </button>
-
-                                    <button className="btn save" onClick={() => approvePayment(p.booking_id)}>
-                                    approve
-                                    </button>
-
-                                    <button className="btn cancel" onClick={() => rejectPayment(p.booking_id)}>
-                                    reject
-                                    </button>
-                                </div>
                                 </td>
                             </tr>
-                            ))
-                        )}
-                        </tbody>
+                        ))}
+                    </tbody>
                 </table>
             </div>
-            {/* popup รูป */}
-            {selectedSlip && (
-                <div className="popup" onClick={() => setSelectedSlip(null)}>
-                    <div className="popup-content">
-                        <img src={selectedSlip} alt="slip" />
-                    </div>
-                </div>
-            )}
+
             <div className="summary-box">
                 <div>total seats : {totalSeats}</div>
                 <div>available : {availableSeats}</div>
                 <div>booked : {bookedSeats}</div>
                 <div>total money : {totalMoney} ฿</div>
             </div>
-            <div><BottomNav goPage={goPage} /></div>
+
+            <div>
+                <BottomNav goPage={goPage} />
+            </div>
         </div>
     );
 }
