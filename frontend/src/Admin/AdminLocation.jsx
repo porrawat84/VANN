@@ -1,5 +1,5 @@
 import { useState , useEffect} from "react";
-import "./Location.css";
+import "./AdminLocation.css";
 import BottomNav from "./BottomNav";
 
 const DEST_CODE_TO_NAME = {
