@@ -17,7 +17,7 @@ import AdminLocation from "./Admin/Location";
 import Dataseat from "./Admin/Dataseat";
 import AdminDashboardChat from "./Admin/DashboardChat";
 import AdminChatRoom from "./Admin/ChatRoom";
-import AdminProfile from "./Admin/Profile";
+import AdminProfile from "./Admin/AdminProfile";
 import AdminPayments from "./Admin/AdminPayments";
 import DashboardChat from "./Admin/DashboardChat";
 import ChatRoom from "./Admin/ChatRoom";
@@ -158,6 +158,14 @@ export default function App() {
         }
       }
 
+      if (msg.type === "UPDATE_PROFILE_OK") {
+        if (msg.name) localStorage.setItem("name", msg.name);
+        if (msg.phone) localStorage.setItem("phone", msg.phone);
+        if (msg.email) localStorage.setItem("email", msg.email);
+
+        notify?.("บันทึกข้อมูลสำเร็จ", "info");
+      }
+
       if (msg.type === "SIGN_IN_FAIL") {
         notify("อีเมลหรือรหัสผ่านไม่ถูกต้อง", "error");
       }
@@ -258,7 +266,13 @@ export default function App() {
       />
     ),
 
-    profile: <Profile goPage={goTo} />,
+    profile: (
+      <Profile
+        goPage={goTo}
+        tcpRequest={tcpRequest}
+        notify={notify}
+      />
+    ),
     myticket: (
       <MyTicket
         goPage={goTo}

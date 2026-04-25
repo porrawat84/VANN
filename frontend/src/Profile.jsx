@@ -1,18 +1,59 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./cssProfile.css";
 import logo from "./assets/image/logo.png";
 import bg from "./assets/image/background.png";
 
-export default function UserProfile({ goPage }) {
+export default function UserProfile({ goPage, tcpRequest, notify }) {
     const [editMode, setEditMode] = useState(false);
-    const [name, setName] = useState(localStorage.getItem("name") || "");
-    const [phone, setPhone] = useState(localStorage.getItem("phone") || "");
-    const [email] = useState(localStorage.getItem("email") || "");
+    const [saving, setSaving] = useState(false);
 
-    const handleSave = () => {
-        localStorage.setItem("name", name);
-        localStorage.setItem("phone", phone);
-        localStorage.setItem("phone", phone);
+    const [name, setName] = useState("");
+    const [phone, setPhone] = useState("");
+    const [email, setEmail] = useState("");
+
+    useEffect(() => {
+        setName(localStorage.getItem("name") || "");
+        setPhone(localStorage.getItem("phone") || "");
+        setEmail(localStorage.getItem("email") || "");
+    }, []);
+
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+
+            const res = await tcpRequest({
+                type: "UPDATE_PROFILE",
+                name,
+                phone,
+            });
+
+            if (res.type !== "UPDATE_PROFILE_OK") {
+                notify?.(res.code || "บันทึกข้อมูลไม่สำเร็จ", "error");
+                return;
+            }
+
+            localStorage.setItem("name", res.name || "");
+            localStorage.setItem("phone", res.phone || "");
+            localStorage.setItem("email", res.email || "");
+
+            setName(res.name || "");
+            setPhone(res.phone || "");
+            setEmail(res.email || "");
+
+            notify?.("บันทึกข้อมูลสำเร็จ", "info");
+            setEditMode(false);
+        } catch (e) {
+            console.error(e);
+            notify?.("บันทึกข้อมูลไม่สำเร็จ", "error");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleCancel = () => {
+        setName(localStorage.getItem("name") || "");
+        setPhone(localStorage.getItem("phone") || "");
+        setEmail(localStorage.getItem("email") || "");
         setEditMode(false);
     };
 
@@ -31,7 +72,6 @@ export default function UserProfile({ goPage }) {
                 backgroundRepeat: "no-repeat",
             }}
         >
-            {/* Avatar */}
             <div className="profile-avatar-wrap">
                 <div className="profile-avatar">
                     <img src={logo} alt="profile" className="profile-avatar-img" />
@@ -39,7 +79,6 @@ export default function UserProfile({ goPage }) {
                 <h2 className="profile-name">{name || "VANN"}</h2>
             </div>
 
-            {/* Info Box */}
             <div className="boxyellow profile-box">
                 <p className="profile-section-title">ข้อมูลส่วนตัว</p>
 
@@ -72,17 +111,32 @@ export default function UserProfile({ goPage }) {
 
                 {editMode ? (
                     <div className="signin-btn-group">
-                        <button className="btn signin-blue" onClick={() => setEditMode(false)}>ยกเลิก</button>
-                        <button className="btn signin-purple" onClick={handleSave}>บันทึก</button>
+                        <button
+                            className="btn signin-blue"
+                            onClick={handleCancel}
+                            disabled={saving}
+                        >
+                            ยกเลิก
+                        </button>
+                        <button
+                            className="btn signin-purple"
+                            onClick={handleSave}
+                            disabled={saving}
+                        >
+                            {saving ? "กำลังบันทึก..." : "บันทึก"}
+                        </button>
                     </div>
                 ) : (
-                    <button className="btn signin-purple" style={{ marginTop: 8 }} onClick={() => setEditMode(true)}>
+                    <button
+                        className="btn signin-purple"
+                        style={{ marginTop: 8 }}
+                        onClick={() => setEditMode(true)}
+                    >
                         แก้ไขข้อมูล
                     </button>
                 )}
             </div>
 
-            {/* Logout */}
             <button className="btn profile-logout-btn" onClick={handleLogout}>
                 ออกจากระบบ
             </button>

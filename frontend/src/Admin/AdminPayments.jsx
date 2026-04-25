@@ -95,6 +95,8 @@ export default function AdminPayments({ goPage, tcpRequest, notify }) {
         loadPending();
     }, []);
 
+
+
     return (
         <div className="app">
             <button className="back-btn" onClick={() => goPage("adminHome")}>
@@ -125,27 +127,40 @@ export default function AdminPayments({ goPage, tcpRequest, notify }) {
                         ) : (
                             payments.map((p) => (
                                 <tr key={p.payment_id}>
-                                    <td>{p.booking_id}</td>
-                                    <td>
+                                    <td className="booking-cell">
+                                        To : {p.to || p.destination || "Mochit"} <br />
+                                        Time : {p.time || p.trip_time || "-"} <br />
+                                        seat : {p.seat || p.seat_no || "-"}
+                                    </td>
+
+                                    <td className="info-cell">
                                         username : {p.name} <br />
                                         phone : {p.phone || "-"} <br />
                                         trip : {p.trip_id} <br />
                                         amount : {(Number(p.amount) / 100).toFixed(2)} ฿
                                     </td>
-                                    <td>
-                                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                                            <button className="slip-btn" onClick={() => openSlip(p.payment_id)}>
-                                                🖼 view slip
-                                            </button>
 
-                                            <button className="btn save" onClick={() => approvePayment(p.booking_id)}>
-                                                approve
-                                            </button>
+                                    <td className="payment-cell">
+                                        <button
+                                            className="slip-btn"
+                                            onClick={() => openSlip(p.payment_id)}
+                                        >
+                                            🖼
+                                        </button>
 
-                                            <button className="btn cancel" onClick={() => rejectPayment(p.booking_id)}>
-                                                reject
-                                            </button>
-                                        </div>
+                                        <button
+                                            className="reject-btn"
+                                            onClick={() => rejectPayment(p.booking_id)}
+                                        >
+                                            reject
+                                        </button>
+
+                                        <button
+                                            className="accept-btn"
+                                            onClick={() => approvePayment(p.booking_id)}
+                                        >
+                                            accept
+                                        </button>
                                     </td>
                                 </tr>
                             ))
