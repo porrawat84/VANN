@@ -54,7 +54,7 @@ async function loginUser({ email, password }) {
   const ok = verifyPassword(password, u.password_hash);
   if (!ok) return { ok: false, code: "BAD_CREDENTIALS" };
 
-  return { ok: true, userId: u.user_id, role: u.role, name: u.name, phone: u.phone };
+  return { ok: true, userId: u.user_id, role: u.role, name: u.name, phone: u.phone, email: u.email, };
 }
 
 async function getUserRole(userId) {

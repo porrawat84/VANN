@@ -147,6 +147,7 @@ export default function App() {
         localStorage.setItem("role", msg.role || "USER");
         if (msg.name) localStorage.setItem("name", msg.name);
         if (msg.phone) localStorage.setItem("phone", msg.phone);
+        if (msg.email) localStorage.setItem("email", msg.email);
 
         window.tcp.send({ type: "HELLO", userId: id, role: msg.role || "USER" });
 

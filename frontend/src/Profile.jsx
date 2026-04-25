@@ -12,6 +12,7 @@ export default function UserProfile({ goPage }) {
     const handleSave = () => {
         localStorage.setItem("name", name);
         localStorage.setItem("phone", phone);
+        localStorage.setItem("phone", phone);
         setEditMode(false);
     };
 
