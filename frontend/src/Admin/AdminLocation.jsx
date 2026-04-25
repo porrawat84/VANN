@@ -201,14 +201,14 @@ export default function AdminLocation({ goPage, tcpRequest, notify }) {
                         >
                             <span>{slot.time}</span>
 
-                            <span
-                                className={`badge ${slot.available === 0 ? "full" : ""
-                                    }`}
-                            >
-                                {slot.available} available
-                            </span>
-                        </button>
-                    ))}
+                        <span
+                            className={`badge ${slot.available === 0 ? "full" : ""
+                                }`}
+                        >
+                            {slot.available} available
+                        </span>
+                    </button>
+                ))}
             </div>
             <div><BottomNav goPage={goPage} /></div>
 
