@@ -14,7 +14,7 @@ import MyTicket from "./MyTicket";
 
 import AdminBottomNav from "./Admin/BottomNav";
 import AdminHome from "./Admin/Home";
-import AdminLocation from "./Admin/Location";
+import AdminLocation from "./Admin/AdminLocation";
 import Dataseat from "./Admin/Dataseat";
 import AdminDashboardChat from "./Admin/DashboardChat";
 import AdminChatRoom from "./Admin/ChatRoom";
