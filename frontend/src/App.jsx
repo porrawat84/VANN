@@ -5,6 +5,7 @@ import Location from "./Location";
 import Time from "./Time";
 import Seat from "./Seat";
 import Forgetpass from "./Forgetpass";
+import ResetPassword from "./ResetPassword";
 import UserBottomNav from './UserBottomNav';
 import Payment from "./Payment";
 import UserChat from "./UserChat";
@@ -13,7 +14,7 @@ import MyTicket from "./MyTicket";
 
 import AdminBottomNav from "./Admin/BottomNav";
 import AdminHome from "./Admin/Home";
-import AdminLocation from "./Admin/AdminLocation";
+import AdminLocation from "./Admin/Location";
 import Dataseat from "./Admin/Dataseat";
 import AdminDashboardChat from "./Admin/DashboardChat";
 import AdminChatRoom from "./Admin/ChatRoom";
@@ -59,6 +60,7 @@ export default function App() {
   };
 
   const [page, setPage] = useState("signin");
+  const [resetEmail, setResetEmail] = useState("");
 
   const [paymentPageData, setPaymentPageData] = useState(null);
   const [connected, setConnected] = useState(false);
@@ -67,7 +69,6 @@ export default function App() {
   const [selectedTripId, setSelectedTripId] = useState(null);
   const [authUserId, setAuthUserId] = useState(null);
   const [toast, setToast] = useState(null);
-  const [adminTrip, setAdminTrip] = useState(null);
   const [userId, setUserId] = useState(() => {
     const s = localStorage.getItem("userId");
     return s ? Number(s) : null;
@@ -229,7 +230,20 @@ export default function App() {
       notify={notify}
       goBack={() => goTo("signin")} />,
 
-    forgetpass: <Forgetpass goBack={() => goTo("signin")} notify={notify} />,
+    forgetpass: <Forgetpass
+      goBack={() => goTo("signin")}
+      goReset={(email) => { setResetEmail(email); goTo("resetpassword"); }}
+      notify={notify}
+      tcpRequest={tcpRequest}
+    />,
+
+    resetpassword: <ResetPassword
+      email={resetEmail}
+      goBack={() => goTo("forgetpass")}
+      goLogin={() => goTo("signin")}
+      notify={notify}
+      tcpRequest={tcpRequest}
+    />,
 
     location: <Location goNext={() => goTo("time")} goChat={() => goTo("userChat")} />,
     time: <Time goBack={() => goTo("location")} goNext={() => goTo("seat")} />,
@@ -285,6 +299,8 @@ export default function App() {
 
     //Admin
     adminHome: <AdminHome goPage={goTo} />,
+    adminLocation: <AdminLocation goPage={goTo} />,
+    dataseat: <Dataseat goPage={goTo} tcpRequest={tcpRequest} notify={notify} />,
 
     adminDashboardChat: (
       <AdminDashboardChat
@@ -311,31 +327,13 @@ export default function App() {
 
     adminPayments: (
       <AdminPayments
-        goPage={setPage}
-        tcpRequest={tcpRequest}
-        notify={notify}
-      />
-    ),
-
-    adminLocation: (
-      <AdminLocation
         goPage={goTo}
         tcpRequest={tcpRequest}
         notify={notify}
-        setAdminTrip={setAdminTrip}
       />
     ),
 
-    dataseat: (
-      <Dataseat
-        goPage={goTo}
-        tcpRequest={tcpRequest}
-        notify={notify}
-        adminTrip={adminTrip}
-      />
-    ),
-
-      };
+  };
 
   return (
     <>
