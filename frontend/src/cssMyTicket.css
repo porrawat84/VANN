@@ -6,6 +6,7 @@
   max-width: 420px;        /* เพิ่ม */
   margin: 0 auto;          /* เพิ่ม */
   padding: 24px 18px;
+  padding-bottom: 90px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -33,6 +34,9 @@
   border: 1px solid black;
   padding: 24px 20px 20px;
   box-shadow: 0 12px 25px rgba(0,0,0,0.25);
+  max-height: 65vh;        /* เพิ่ม — จำกัดความสูง */
+  display: flex;           /* เพิ่ม */
+  flex-direction: column; /* เพิ่ม */
 }
 
 /* ===== Close button ===== */
@@ -62,6 +66,9 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow-y: auto;        /* เพิ่ม — scroll ได้ข้างใน */
+  flex: 1;                 /* เพิ่ม */
+  padding-right: 4px;   
 }
 
 /* ===== Ticket Item ===== */
@@ -125,4 +132,12 @@
 
 .ticket-status.default {
   background-color: #e0e0e0;
+}
+
+.ticket-status.rejected {
+  background-color: #ff9595;
+}
+
+.ticket-status.expired {
+  background-color: #afafaf;
 }

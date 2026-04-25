@@ -1,44 +1,60 @@
 import { useState } from "react";
 import "./AdminProfile.css";
 import BottomNav from "./BottomNav";
+import logo from "./assets/image/logo.png";
+import bg from "./assets/image/background.png";
 
-
-export default function Profile({ goPage, onLogout, user={ }}){
+export default function Profile({ goPage, onLogout }) {
     const [loading, setLoading] = useState(false);
+
+    const name = localStorage.getItem("name") || "Admin";
+    const email = localStorage.getItem("email") || "-";
+    const phone = localStorage.getItem("phone") || "-";
 
     const handleLogout = () => {
         setLoading(true);
-
         setTimeout(() => {
-            onLogout && onLogout();
+            localStorage.clear();
+            goPage("signin");
             setLoading(false);
-        }, 1000);
+        }, 800);
     };
 
     return (
-        <div className="profile-container">
-            <div className="profile-card">
-                <div className="profile-content">
-                    <img
-                        src={user?.avatar || "https://via.placeholder.com/100"}
-                        alt="avatar"
-                        className="profile-avatar"
-                    />
+        <div
+            className="admin-profile-page"
 
-                    <h2 className="profile-name">{user?.name || "Guest"}</h2>
-                    <p className="profile-email">{user?.email || "No email"}</p>
-
-                    <button
-                        onClick={handleLogout}
-                        className="logout-btn"
-                        disabled={loading}
-                    >
-                        {loading ? "Logging out..." : "Logout"}
-                    </button>
+        >
+            {/* Avatar */}
+            <div className="admin-profile-avatar-wrap">
+                <div className="admin-profile-avatar">
+                    <img src={logo} alt="logo" className="admin-profile-avatar-img" />
                 </div>
+                <h2 className="admin-profile-name">{name}</h2>
+                <p className="admin-profile-role">admin</p>
             </div>
-            <div><BottomNav goPage={goPage} currentPage="adminProfile"/></div>
 
+            {/* Info Box */}
+            <div className="admin-profile-box">
+                <p className="admin-profile-section-title">information</p>
+
+                
+                <label>email</label>
+                <div className="admin-profile-value">{email}</div>
+
+               
+
+                <button
+                    className="admin-logout-btn"
+                    onClick={handleLogout}
+                    disabled={loading}
+                >
+                    {loading ? "logging out..." : "log out"}
+                </button>
+            </div>
+            <div><BottomNav goPage={goPage} /></div>
+
+            <BottomNav goPage={goPage} currentPage="adminProfile" />
         </div>
     );
 }

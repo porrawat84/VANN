@@ -48,14 +48,14 @@
 .user-nav-item .nav-icon {
   width: 24px;
   height: 24px;
-  color: #B0B0B0;
+  color: #a0a0a0;
   transition: all 0.25s ease;
 }
 
 .user-nav-item .nav-label {
   font-size: 10px;
   font-weight: 500;
-  color: #B0B0B0;
+  color: #a0a0a0;
   letter-spacing: 0.3px;
   transition: all 0.25s ease;
   font-family: 'Prompt', 'Kanit', sans-serif;
