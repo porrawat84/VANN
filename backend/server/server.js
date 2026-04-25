@@ -6,7 +6,7 @@ const { sendPasswordResetEmail } = require("./emailService");
 // เก็บ OTP ใน Memory  { email → { otp, expiresAt } }
 const otpStore = new Map();
 
-const { listSeats, holdSeat, confirmSeat, releaseExpiredHolds } = require("./seatService");
+const { listSeats, holdSeat, confirmSeat, releaseExpiredHolds, ensureTripSeats, } = require("./seatService");
 const { createBooking, getBookings, getBookingDetail } = require("./bookingService");
 const { sendChat, getChatHistory, getAdminChatList } = require("./chatService");
 const {
@@ -246,7 +246,7 @@ const server = net.createServer((socket) => {
             await sendPasswordResetEmail(email, otp, user.name);
 
             console.log(`OTP sent to ${email}: ${otp}`);
-            send(socket, { type: "FORGOT_PASSWORD_OK" });
+            reply({ type: "FORGOT_PASSWORD_OK" });
 
           } catch (err) {
             console.error("FORGOT_PASSWORD error:", err);
@@ -310,7 +310,7 @@ const server = net.createServer((socket) => {
             otpStore.delete(email);
 
             console.log(`Password reset success for userId: ${record.userId}`);
-            send(socket, { type: "RESET_PASSWORD_OK" });
+            reply({ type: "RESET_PASSWORD_OK" });
 
           } catch (err) {
             console.error("RESET_PASSWORD error:", err);
@@ -754,6 +754,7 @@ const server = net.createServer((socket) => {
             continue;
           }
           try {
+            await ensureTripSeats(msg.tripId);
             const seats = await getAdminSeats(msg.tripId);
             reply({ type: "ADMIN_GET_SEATS_OK", seats });
           } catch (err) {

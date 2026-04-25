@@ -30,7 +30,7 @@ export default function ForgetPassword({ goBack, goReset, notify, tcpRequest }) 
       if (res.type === "FORGOT_PASSWORD_OK") {
         notify?.("ส่ง OTP ไปที่อีเมลของคุณแล้ว!", "success");
         // ส่ง email ไปด้วยเพื่อใช้ในหน้าถัดไป
-        goReset?.(cleanEmail);
+        goReset(cleanEmail);
       } else {
         notify?.("เกิดข้อผิดพลาด กรุณาลองใหม่", "error");
       }
@@ -40,6 +40,8 @@ export default function ForgetPassword({ goBack, goReset, notify, tcpRequest }) 
     } finally {
       setLoading(false);
     }
+
+    console.log("goReset =", goReset);
   };
 
   return (
