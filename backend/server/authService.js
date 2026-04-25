@@ -6,7 +6,6 @@ function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
   const keylen = 32;
   const digest = "sha256";
   const hash = crypto.pbkdf2Sync(password, salt, iterations, keylen, digest).toString("hex");
-  // เก็บเป็น format: pbkdf2$iters$salt$hash
   return `pbkdf2$${iterations}$${salt}$${hash}`;
 }
 
@@ -34,32 +33,72 @@ async function registerUser({ name, email, phone, password }) {
     [name, email, phone || null, passwordHash]
   );
 
-  return { 
+  return {
     ok: true,
     userId: rows[0].user_id,
-    role: rows[0].role
+    role: rows[0].role,
   };
 }
 
 async function loginUser({ email, password }) {
   const { rows } = await pool.query(
-    `SELECT user_id, password_hash, role, name, phone
+    `SELECT user_id, password_hash, role, name, phone, email
      FROM app_user
-     WHERE email=$1`,
+     WHERE email = $1`,
     [email]
   );
+
   if (rows.length === 0) return { ok: false, code: "BAD_CREDENTIALS" };
 
   const u = rows[0];
   const ok = verifyPassword(password, u.password_hash);
   if (!ok) return { ok: false, code: "BAD_CREDENTIALS" };
 
-  return { ok: true, userId: u.user_id, role: u.role, name: u.name, phone: u.phone, email: u.email, };
+  return {
+    ok: true,
+    userId: u.user_id,
+    role: u.role,
+    name: u.name,
+    phone: u.phone,
+    email: u.email,
+  };
+}
+
+async function updateUserProfile({ userId, name, phone }) {
+  const { rows } = await pool.query(
+    `UPDATE app_user
+     SET name = $2,
+         phone = $3
+     WHERE user_id = $1
+     RETURNING user_id, name, phone, email, role`,
+    [userId, name || null, phone || null]
+  );
+
+  if (rows.length === 0) {
+    return { ok: false, code: "NO_USER" };
+  }
+
+  return {
+    ok: true,
+    userId: rows[0].user_id,
+    name: rows[0].name,
+    phone: rows[0].phone,
+    email: rows[0].email,
+    role: rows[0].role,
+  };
 }
 
 async function getUserRole(userId) {
-  const { rows } = await pool.query(`SELECT role FROM app_user WHERE user_id=$1`, [userId]);
+  const { rows } = await pool.query(
+    `SELECT role FROM app_user WHERE user_id = $1`,
+    [userId]
+  );
   return rows[0]?.role || "USER";
 }
 
-module.exports = { registerUser, loginUser, getUserRole };
+module.exports = {
+  registerUser,
+  loginUser,
+  updateUserProfile,
+  getUserRole,
+};

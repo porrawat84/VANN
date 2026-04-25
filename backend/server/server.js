@@ -152,6 +152,8 @@ const server = net.createServer((socket) => {
           continue;
         }
 
+        const reply = (obj) => send(socket, { ...obj, requestId: msg.requestId });
+
         if (msg.type === "SIGN_IN") {
           const r = await loginUser({ email: msg.email, password: msg.password });
 
@@ -245,7 +247,6 @@ const server = net.createServer((socket) => {
           continue;
         }
 
-        const reply = (obj) => send(socket, { ...obj, requestId: msg.requestId });
         // ---- seat
         if (msg.type === "LIST_SEATS") {
           const seats = await listSeats(msg.tripId);
