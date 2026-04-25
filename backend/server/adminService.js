@@ -1,36 +1,46 @@
 const { pool } = require("./db");
-const fs = require("fs");
-const path = require("path");
 
-// ─────────────────────────────────────────────────────────
-// 1. ADMIN_GET_SEATS
-//    ดึงข้อมูลที่นั่งทั้งหมดของ trip พร้อมข้อมูลผู้จอง
-// ─────────────────────────────────────────────────────────
 async function getAdminSeats(tripId) {
   const { rows } = await pool.query(
     `
+    WITH current_booking AS (
+      SELECT
+        bs.seat_id,
+        b.booking_id,
+        b.user_id,
+        b.total_price
+      FROM booking b
+      JOIN booking_seat bs
+        ON bs.booking_id = b.booking_id
+      WHERE b.trip_id = $1
+        AND b.status NOT IN ('CANCELLED', 'PAYMENT_REJECTED')
+    ),
+    latest_payment AS (
+      SELECT DISTINCT ON (booking_id)
+        booking_id,
+        payment_id,
+        status AS payment_status
+      FROM payment
+      ORDER BY booking_id, payment_id DESC
+    )
     SELECT
       s.seat_id,
       s.seat_number,
-      ss.status          AS seat_status,
+      ss.status AS seat_status,
       u.name,
       u.phone,
-      b.total_price,
-      p.status           AS payment_status,
-      p.payment_id
+      cb.total_price,
+      lp.payment_status,
+      lp.payment_id
     FROM seat_status ss
     JOIN seat s
       ON s.seat_id = ss.seat_id
-    LEFT JOIN booking_seat bs
-      ON bs.seat_id = s.seat_id
-    LEFT JOIN booking b
-      ON  b.booking_id = bs.booking_id
-      AND b.trip_id    = ss.trip_id        -- ← กรอง booking ของ trip นี้เท่านั้น
-      AND b.status NOT IN ('CANCELLED', 'PAYMENT_REJECTED')
+    LEFT JOIN current_booking cb
+      ON cb.seat_id = s.seat_id
     LEFT JOIN app_user u
-      ON u.user_id = b.user_id
-    LEFT JOIN payment p
-      ON p.booking_id = b.booking_id
+      ON u.user_id = cb.user_id
+    LEFT JOIN latest_payment lp
+      ON lp.booking_id = cb.booking_id
     WHERE ss.trip_id = $1
     ORDER BY s.seat_number
     `,

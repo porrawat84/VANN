@@ -113,9 +113,39 @@ export default function Dataseat({ goPage, tcpRequest, notify }) {
                     };
                 });
 
-                setSeats(mapped);
 
-                setSeats(mapped);
+                // 🔥 MOCK ตรงนี้ !!!
+                const mock = [
+                    {
+                        id: "A1",
+                        name: "ice",
+                        phone: "0989956522",
+                        price: "40.00",
+                        status: "waiting",
+                        slip: "https://via.placeholder.com/250x350.png?text=Payment+Slip" // 👈 กดได้
+                    },
+                    {
+                        id: "A2",
+                        name: "-",
+                        phone: "-",
+                        price: "-",
+                        status: "empty",
+                    },
+                    {
+                        id: "B1",
+                        name: "mew",
+                        phone: "0999999999",
+                        price: "20.00",
+                        status: "success",
+                    },
+                ];
+
+                // ❌ ปิดของจริงไว้ก่อน
+                // setSeats(mapped);
+
+                // ✅ ใช้ mock แทน
+                setSeats(mock);
+
             } catch (e) {
                 console.error(e);
                 notify?.("โหลดที่นั่งไม่สำเร็จ", "error");
@@ -285,69 +315,77 @@ export default function Dataseat({ goPage, tcpRequest, notify }) {
             )}
             {selectedPayment && (
                 <div className="popup" onClick={() => setSelectedPayment(null)}>
-                    <div className="payment-popup" onClick={(e) => e.stopPropagation()}>
+                    <div className="payment-popup2" onClick={(e) => e.stopPropagation()}>
 
-                        <div className="payment-popup-table">
+                        <h2>Payment Detail</h2>
 
-                            {/* booking */}
-                            <div className="popup-booking">
-                                To : - <br />
-                                Time : - <br />
-                                seat : {selectedPayment.id}
-                            </div>
+                        <div className="popup-section">
+                            <strong>Booking</strong>
+                            <div>To : -</div>
+                            <div>Time : -</div>
+                            <div>Seat : {selectedPayment.id}</div>
+                        </div>
 
-                            {/* info */}
-                            <div className="popup-info">
-                                username : {selectedPayment.name} <br />
-                                phone : {selectedPayment.phone} <br />
-                                paid time : - <br />
-                                paid date : - <br />
-                                amount : {selectedPayment.price} ฿
-                            </div>
+                        <div className="popup-section">
+                            <strong>User</strong>
+                            <div>Username : {selectedPayment.name}</div>
+                            <div>Phone : {selectedPayment.phone}</div>
+                        </div>
 
-                            {/* action */}
-                            <div className="popup-action">
+                        <div className="popup-section">
+                            <strong>Payment</strong>
+                            <div>Amount : {selectedPayment.price} ฿</div>
+                            <div>Status : {selectedPayment.status}</div>
+                        </div>
 
-                                <button
-                                    className="reject-btn"
-                                    onClick={() => {
-                                        setSeats((prev) =>
-                                            prev.map((seat) =>
-                                                seat.id === selectedPayment.id
-                                                    ? {
-                                                        ...seat,
-                                                        status: "empty",
-                                                        name: "-",
-                                                        phone: "-",
-                                                        price: "-"
-                                                    }
-                                                    : seat
-                                            )
-                                        );
-                                        setSelectedPayment(null);
-                                    }}
-                                >
-                                    reject
-                                </button>
+                        {/* รูป */}
+                        {selectedPayment.slip && (
+                            <img
+                                src={selectedPayment.slip}
+                                alt="slip"
+                                className="popup-slip-big"
+                                onClick={() => setSelectedSlip(selectedPayment.slip)} 
+                            />
+                        )}
 
-                                <button
-                                    className="accept-btn"
-                                    onClick={() => {
-                                        setSeats((prev) =>
-                                            prev.map((seat) =>
-                                                seat.id === selectedPayment.id
-                                                    ? { ...seat, status: "success" }
-                                                    : seat
-                                            )
-                                        );
-                                        setSelectedPayment(null);
-                                    }}
-                                >
-                                    accept
-                                </button>
+                        <div className="popup-btns">
+                            <button
+                                className="reject-btn"
+                                onClick={() => {
+                                    setSeats((prev) =>
+                                        prev.map((seat) =>
+                                            seat.id === selectedPayment.id
+                                                ? {
+                                                    ...seat,
+                                                    status: "empty",
+                                                    name: "-",
+                                                    phone: "-",
+                                                    price: "-"
+                                                }
+                                                : seat
+                                        )
+                                    );
+                                    setSelectedPayment(null);
+                                }}
+                            >
+                                Reject
+                            </button>
 
-                            </div>
-
+                            <button
+                                className="accept-btn"
+                                onClick={() => {
+                                    setSeats((prev) =>
+                                        prev.map((seat) =>
+                                            seat.id === selectedPayment.id
+                                                ? { ...seat, status: "success" }
+                                                : seat
+                                        )
+                                    );
+                                    setSelectedPayment(null);
+                                }}
+                            >
+                                Accept
+                            </button>
                         </div>
 
                     </div>
@@ -359,7 +397,7 @@ export default function Dataseat({ goPage, tcpRequest, notify }) {
                 <div>booked : {bookedSeats}</div>
                 <div>total money : {totalMoney} ฿</div>
             </div>
-            <div><BottomNav goPage={goPage} /></div>
+            <div><BottomNav goPage={goPage} currentPage="dataseat" /></div>
         </div>
     );
 }

@@ -52,6 +52,7 @@ export default function Profile({ goPage, onLogout }) {
                     {loading ? "logging out..." : "log out"}
                 </button>
             </div>
+            <div><BottomNav goPage={goPage} /></div>
 
             <BottomNav goPage={goPage} currentPage="adminProfile" />
         </div>

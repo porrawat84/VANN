@@ -83,7 +83,7 @@ function DashboardChat({ goPage, goChat, tcpRequest, notify }) {
         </div>
       </div>
 
-      <BottomNav goPage={goPage} />
+      <BottomNav goPage={goPage} currentPage="adminDashboardChat"/>
     </div>
   );
 }

@@ -4,7 +4,6 @@ import BottomNav from "./BottomNav";
 
 export default function AdminPayments({ goPage, tcpRequest, notify }) {
     const [payments, setPayments] = useState([]);
-    const [selectedPayment, setSelectedPayment] = useState(null);
     const [selectedSlip, setSelectedSlip] = useState(null);
     const [loading, setLoading] = useState(false);
 
@@ -180,7 +179,7 @@ export default function AdminPayments({ goPage, tcpRequest, notify }) {
             )}
 
             <div>
-                <BottomNav goPage={goPage} />
+                <BottomNav goPage={goPage} currentPage="adminPayments" />
             </div>
         </div>
     );
