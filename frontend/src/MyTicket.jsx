@@ -46,27 +46,48 @@ function parseTripId(tripId) {
   };
 }
 
-function mapStatus(status) {
+function isExpired(bookingDate, minutes = 10) {
+  if (!bookingDate) return false;
+  const created = new Date(bookingDate).getTime();
+  const now = Date.now();
+  return now - created > minutes * 60 * 1000;
+}
+
+function mapStatus(status, bookingDate) {
   if (status === "CONFIRMED") {
-    return { label: "success", className: "success" };
+    return { label: "success", className: "success", clickable: false };
   }
 
   if (status === "WAITING_VERIFY") {
-    return { label: "waiting", className: "waiting" };
+    return { label: "waiting", className: "waiting", clickable: true };
   }
 
   if (status === "PENDING_PAYMENT") {
-    return { label: "waiting", className: "waiting" };
+    if (isExpired(bookingDate)) {
+      return { label: "expired", className: "expired", clickable: true };
+    }
+    return { label: "waiting", className: "waiting", clickable: true };
   }
 
-  return { label: status?.toLowerCase?.() || "-", className: "default" };
+  if (status === "PAYMENT_REJECTED") {
+    return { label: "rejected", className: "rejected", clickable: false };
+  }
+
+  return {
+    label: status?.toLowerCase?.() || "-",
+    className: "default",
+    clickable: false,
+  };
 }
 
 export default function MyTicket({ goPage, tcpRequest, notify }) {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const buyerName = localStorage.getItem("name") || localStorage.getItem("email") || "guest";
+  const buyerName =
+    localStorage.getItem("name") ||
+    localStorage.getItem("email") ||
+    "guest";
 
   const loadTickets = async () => {
     try {
@@ -95,6 +116,34 @@ export default function MyTicket({ goPage, tcpRequest, notify }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleTicketClick = (ticket) => {
+    if (ticket.status === "WAITING_VERIFY") {
+      notify?.("ส่งสลิปแล้ว รอแอดมินตรวจสอบ", "info");
+      return;
+    }
+
+    if (ticket.status === "PENDING_PAYMENT") {
+      if (isExpired(ticket.booking_date)) {
+        notify?.("จ่ายไม่ทันแล้ว กรุณาจองใหม่", "error");
+        return;
+      }
+
+      localStorage.setItem("resumeBookingId", String(ticket.booking_id));
+      goPage("payment");
+      return;
+    }
+
+    if (ticket.status === "CONFIRMED") {
+      notify?.("รายการนี้ยืนยันสำเร็จแล้ว", "info");
+      return;
+    }
+
+    if (ticket.status === "PAYMENT_REJECTED") {
+      notify?.("รายการนี้ถูกปฏิเสธการชำระเงิน", "error");
+      return;
+    }
+  };
+
   return (
     <div
       className="myticket-page"
@@ -108,7 +157,9 @@ export default function MyTicket({ goPage, tcpRequest, notify }) {
       <img src={logo} alt="logo" className="myticket-logo" />
 
       <div className="myticket-card">
-        <button className="myticket-close" onClick={() => goPage("location")}>×</button>
+        <button className="myticket-close" onClick={() => goPage("location")}>
+          ×
+        </button>
         <div className="myticket-title">my ticket</div>
 
         <div className="myticket-list">
@@ -119,10 +170,14 @@ export default function MyTicket({ goPage, tcpRequest, notify }) {
           ) : (
             tickets.map((ticket) => {
               const parsed = parseTripId(ticket.trip_id);
-              const status = mapStatus(ticket.status);
+              const status = mapStatus(ticket.status, ticket.booking_date);
 
               return (
-                <div className="ticket-item" key={ticket.booking_id}>
+                <div
+                  className={`ticket-item ${status.clickable ? "clickable" : ""}`}
+                  key={ticket.booking_id}
+                  onClick={() => handleTicketClick(ticket)}
+                >
                   <div className="ticket-icon">🎫</div>
 
                   <div className="ticket-main">
