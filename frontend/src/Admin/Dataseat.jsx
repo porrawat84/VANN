@@ -1,30 +1,15 @@
 Dataseat
 
-import { useState } from "react";
 import "./Dataseat.css";
 import BottomNav from "./BottomNav";
+import { useState, useEffect } from "react";
 
 
 export default function Dataseat({ goPage }) {
     const [time, setTime] = useState("10:00");
     const [filter, setFilter] = useState("all");
 
-    const [seats, setSeats] = useState([
-        { id: "A1", name: "nongvanda01", phone: "099-999-9999", price: 20, status: "success", slip: "/slips/a1.png" },
-        { id: "A2", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "B1", name: "somshudtocom", phone: "099-999-8888", price: 20, status: "waiting", slip: "/slips/b1.png" },
-        { id: "B2", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "B3", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "C1", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "C2", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "C3", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "D1", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "D2", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "D3", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "E1", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "E2", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-        { id: "E3", name: "-", phone: "-", price: "-", status: "empty", slip: null },
-    ]);
+    const [seats, setSeats] = useState([]);
 
     // popup รูป
     const [selectedSlip, setSelectedSlip] = useState(null);
@@ -70,6 +55,54 @@ export default function Dataseat({ goPage }) {
         .filter(s => s.status === "success")
         .reduce((sum, s) => sum + (Number(s.price) || 0), 0);
 
+        const mapStatus = (status) => {
+    if (status === "APPROVED") return "success";
+    if (status === "WAITING_VERIFY") return "waiting";
+    return "empty";
+};
+
+useEffect(() => {
+    const socket = new WebSocket("ws://localhost:9000");
+
+    socket.onopen = () => {
+        console.log("connected");
+
+        socket.send(JSON.stringify({
+            type: "HELLO",
+            userId: 1,
+            role: "ADMIN"
+        }));
+
+        socket.send(JSON.stringify({
+            type: "ADMIN_GET_SEATS",
+            tripId: "2026-04-25_10:00_BKK-RS"
+        }));
+    };
+
+    socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        console.log("FROM SERVER:", data);
+
+        if (data.type === "ADMIN_GET_SEATS_OK") {
+            const mapped = data.seats.map(s => ({
+                id: s.seat_number,
+                name: s.name || "-",
+                phone: s.phone || "-",
+                price: s.total_price || "-",
+                status: mapStatus(s.status),
+                slip: null
+            }));
+
+            setSeats(mapped);
+        }
+    };
+
+    socket.onerror = (err) => {
+        console.error("Socket error:", err);
+    };
+
+    return () => socket.close();
+}, []);
 
     return (
         <div className="app">

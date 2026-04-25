@@ -160,7 +160,7 @@ const server = net.createServer((socket) => {
           clientInfo.userId = Number(r.userId);
           clientInfo.role = r.role;
 
-          send(socket, { type: "SIGN_IN_OK", userId: clientInfo.userId, role: clientInfo.role, name: r.name, phone: r.phone });
+          send(socket, { type: "SIGN_IN_OK", userId: clientInfo.userId, role: clientInfo.role, name: r.name, phone: r.phone, email: r.email });
           continue;
         }
         // ---- forgot password
@@ -314,11 +314,11 @@ const server = net.createServer((socket) => {
 
         if (msg.type === "GET_BOOKINGS") {
           if (!actorUserId) {
-            reply(socket, { type: "ERROR", code: "AUTH_REQUIRED" });
+            reply({ type: "ERROR", code: "AUTH_REQUIRED" });
             continue;
           }
           const rows = await getBookings(actorUserId);
-          reply(socket, { type: "BOOKINGS", bookings: rows });
+          reply({ type: "BOOKINGS", bookings: rows });
           continue;
         }
 
@@ -414,7 +414,7 @@ const server = net.createServer((socket) => {
           const r = await sendChat({
             userId: targetUserId,
             sender,
-            message: msg.message,
+            message: msg?.message,
           });
 
           broadcastToUser(targetUserId, {
@@ -598,6 +598,56 @@ const server = net.createServer((socket) => {
           });
 
           reply({ type: "ADMIN_REJECT_PAYMENT_OK", bookingId: msg.bookingId });
+          continue;
+        }
+        
+        if (msg.type === "ADMIN_GET_SEATS") {
+          // ตรวจสอบสิทธิ์ว่าเป็น Admin หรือไม่
+          if (clientInfo.role !== "ADMIN") {
+            reply({ type: "ERROR", code: "FORBIDDEN" });
+            continue;
+          }
+
+          const { tripId } = msg;
+          const { pool } = require("./db"); // ตรวจสอบว่าได้ import pool มาจากไฟล์ db หรือไม่
+
+          try {
+            const result = await pool.query(
+  `
+  SELECT 
+    seat.seat_id,
+    seat.seat_number,
+    app_user.name,
+    app_user.phone,
+    booking.total_price,
+    payment.status
+  FROM seat
+  LEFT JOIN booking_seat 
+    ON seat.seat_id = booking_seat.seat_id
+  LEFT JOIN booking 
+    ON booking.booking_id = booking_seat.booking_id
+  LEFT JOIN app_user 
+    ON app_user.user_id = booking.user_id
+  LEFT JOIN payment 
+    ON payment.booking_id = booking.booking_id
+  LEFT JOIN seat_status 
+    ON seat_status.seat_id = seat.seat_id
+  WHERE seat_status.trip_id = $1
+  `,
+  [tripId]
+);
+
+            reply({
+              type: "ADMIN_GET_SEATS_OK",
+              seats: result.rows
+            });
+          } catch (err) {
+            console.error(err);
+            reply({
+              type: "ERROR",
+              message: "โหลดที่นั่งไม่สำเร็จ"
+            });
+          }
           continue;
         }
 
