@@ -5,7 +5,7 @@ import BottomNav from "./BottomNav";
 import { useState, useEffect } from "react";
 
 
-export default function Dataseat({ goPage }) {
+export default function Dataseat({ goPage, tcpRequest, notify }) {
     const [time, setTime] = useState("10:00");
     const [filter, setFilter] = useState("all");
 
@@ -55,54 +55,44 @@ export default function Dataseat({ goPage }) {
         .filter(s => s.status === "success")
         .reduce((sum, s) => sum + (Number(s.price) || 0), 0);
 
-        const mapStatus = (status) => {
-    if (status === "APPROVED") return "success";
-    if (status === "WAITING_VERIFY") return "waiting";
-    return "empty";
-};
-
-useEffect(() => {
-    const socket = new WebSocket("ws://localhost:9000");
-
-    socket.onopen = () => {
-        console.log("connected");
-
-        socket.send(JSON.stringify({
-            type: "HELLO",
-            userId: 1,
-            role: "ADMIN"
-        }));
-
-        socket.send(JSON.stringify({
-            type: "ADMIN_GET_SEATS",
-            tripId: "2026-04-25_10:00_BKK-RS"
-        }));
+    const mapStatus = (status) => {
+        if (status === "APPROVED") return "success";
+        if (status === "WAITING_VERIFY") return "waiting";
+        return "empty";
     };
 
-    socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        console.log("FROM SERVER:", data);
+    useEffect(() => {
+        const loadSeats = async () => {
+            try {
+                const tripId = `${new Date().toISOString().slice(0, 10)}_${time}_BKK-RS`;
+                const res = await tcpRequest({
+                    type: "ADMIN_GET_SEATS",
+                    tripId,
+                });
 
-        if (data.type === "ADMIN_GET_SEATS_OK") {
-            const mapped = data.seats.map(s => ({
-                id: s.seat_number,
-                name: s.name || "-",
-                phone: s.phone || "-",
-                price: s.total_price || "-",
-                status: mapStatus(s.status),
-                slip: null
-            }));
+                if (res.type !== "ADMIN_GET_SEATS_OK") {
+                    notify?.(res.code || "โหลดที่นั่งไม่สำเร็จ", "error");
+                    return;
+                }
 
-            setSeats(mapped);
-        }
-    };
+                const mapped = res.seats.map(s => ({
+                    id: s.seat_number,
+                    name: s.name || "-",
+                    phone: s.phone || "-",
+                    price: s.total_price ? (Number(s.total_price) / 100).toFixed(2) : "-",
+                    status: mapStatus(s.payment_status),
+                    slip: null,
+                }));
 
-    socket.onerror = (err) => {
-        console.error("Socket error:", err);
-    };
+                setSeats(mapped);
+            } catch (e) {
+                console.error(e);
+                notify?.("โหลดที่นั่งไม่สำเร็จ", "error");
+            }
+        };
 
-    return () => socket.close();
-}, []);
+        loadSeats();
+    }, [time]); // โหลดใหม่เมื่อเปลี่ยน time
 
     return (
         <div className="app">

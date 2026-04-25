@@ -16,6 +16,10 @@ const { isBookingOpen } = require("./tripUtil");
 const { registerUser, loginUser, getUserRole } = require("./authService");
 const { DESTS, TIMES, bangkokNow, makeTripId } = require("./tripUtil");
 
+const {
+  getAdminSeats,
+} = require("./adminService");
+
 const PORT = Number(process.env.PORT || 9000);
 
 // --- clients + subscriptions
@@ -35,7 +39,7 @@ function broadcastToAdmins(obj) {
 }
 
 // ปล่อย hold หมดอายุ
-setInterval(() => { releaseExpiredHolds().catch(() => {}); }, 1000);
+setInterval(() => { releaseExpiredHolds().catch(() => { }); }, 1000);
 
 const server = net.createServer((socket) => {
   console.log("Client connected:", socket.remoteAddress, socket.remotePort);
@@ -600,53 +604,18 @@ const server = net.createServer((socket) => {
           reply({ type: "ADMIN_REJECT_PAYMENT_OK", bookingId: msg.bookingId });
           continue;
         }
-        
+
         if (msg.type === "ADMIN_GET_SEATS") {
-          // ตรวจสอบสิทธิ์ว่าเป็น Admin หรือไม่
           if (clientInfo.role !== "ADMIN") {
             reply({ type: "ERROR", code: "FORBIDDEN" });
             continue;
           }
-
-          const { tripId } = msg;
-          const { pool } = require("./db"); // ตรวจสอบว่าได้ import pool มาจากไฟล์ db หรือไม่
-
           try {
-            const result = await pool.query(
-  `
-  SELECT 
-    seat.seat_id,
-    seat.seat_number,
-    app_user.name,
-    app_user.phone,
-    booking.total_price,
-    payment.status
-  FROM seat
-  LEFT JOIN booking_seat 
-    ON seat.seat_id = booking_seat.seat_id
-  LEFT JOIN booking 
-    ON booking.booking_id = booking_seat.booking_id
-  LEFT JOIN app_user 
-    ON app_user.user_id = booking.user_id
-  LEFT JOIN payment 
-    ON payment.booking_id = booking.booking_id
-  LEFT JOIN seat_status 
-    ON seat_status.seat_id = seat.seat_id
-  WHERE seat_status.trip_id = $1
-  `,
-  [tripId]
-);
-
-            reply({
-              type: "ADMIN_GET_SEATS_OK",
-              seats: result.rows
-            });
+            const seats = await getAdminSeats(msg.tripId);
+            reply({ type: "ADMIN_GET_SEATS_OK", seats });
           } catch (err) {
-            console.error(err);
-            reply({
-              type: "ERROR",
-              message: "โหลดที่นั่งไม่สำเร็จ"
-            });
+            console.error("ADMIN_GET_SEATS error:", err);
+            reply({ type: "ERROR", code: "DB_ERROR", message: err.message });
           }
           continue;
         }
