@@ -208,7 +208,7 @@ export default function AdminLocation({ goPage, tcpRequest, notify }) {
                             {slot.available} available
                         </span>
                     </button>
-                ))}
+                )))}
             </div>
             <div><BottomNav goPage={goPage} /></div>
 
