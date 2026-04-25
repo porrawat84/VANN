@@ -14,8 +14,7 @@
 .chatroom-top {
     display: flex;
     align-items: center;
-    gap: 15px;
-    padding: 20px;
+    margin: 10px 20px;
 }
 
 .back-btn {
@@ -32,13 +31,18 @@
 .chat-username {
     font-size: 26px;
     font-weight: 700;
-    margin: 0 auto;
+    margin: 30px 90px;
     transform: translateX(-25px);
 }
 
 .chatroom-container {
+    position: absolute;
+    top: 100px;   /* 👈 ปรับตัวนี้ */
+    left: 20px;
+    right: 20px;
+    bottom: 0;
+
     height: calc(100vh - 165px);
-    margin: -10px 20px 0 20px;
     background: #ffffff;
     border: 1.5px solid #000000;
     border-top-left-radius: 40px;

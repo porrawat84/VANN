@@ -1,5 +1,5 @@
 import { useState , useEffect} from "react";
-import "./Location.css";
+import "./AdminLocation.css";
 import BottomNav from "./BottomNav";
 
 
@@ -84,7 +84,8 @@ export default function AdminLocation({ goPage }) {
                     </button>
                 ))}
             </div>
-            <div><BottomNav goPage={goPage} /></div>
+            <div><BottomNav goPage={goPage} currentPage="adminLocation"/>
+            </div>
 
         </div>
     );

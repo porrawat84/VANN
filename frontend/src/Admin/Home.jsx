@@ -29,7 +29,7 @@ function Location({ goPage}) {
                 
             </div>
             </div>
-            <div><BottomNav goPage={goPage} /></div>
+            <div><BottomNav goPage={goPage} currentPage="adminHome" /></div>
         </div>
     );
 }

@@ -37,7 +37,7 @@ export default function Profile({ goPage, onLogout, user={ }}){
                     </button>
                 </div>
             </div>
-            <div><BottomNav goPage={goPage} /></div>
+            <div><BottomNav goPage={goPage} currentPage="adminProfile"/></div>
 
         </div>
     );

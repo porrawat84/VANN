@@ -154,7 +154,7 @@ export default function ChatRoom({ goBack, chat, goPage, tcpRequest, notify }) {
                 </div>
             </div>
 
-            <BottomNav goPage={goPage} />
+            <BottomNav goPage={goPage} currentPage="adminDashboardChat"/>
         </div>
     );
 }
