@@ -184,26 +184,28 @@ async function submitPaymentSlip({
 async function getPendingPayments() {
   const { rows } = await pool.query(
     `SELECT
-       p.payment_id,
-       p.booking_id,
-       p.amount,
-       p.status AS payment_status,
-       p.transferred_at,
-       p.submitted_at,
-       p.slip_image_path,
-       p.reject_reason,
-       b.user_id,
-       b.trip_id,
-       b.status AS booking_status,
-       b.hold_tokens_json,
-       u.name,
-       u.phone,
-       u.email
-     FROM payment p
-     JOIN booking b ON b.booking_id = p.booking_id
-     JOIN app_user u ON u.user_id = b.user_id
-     WHERE p.status = 'WAITING_VERIFY'
-     ORDER BY p.submitted_at ASC NULLS LAST, p.created_at ASC`
+      p.payment_id,
+      p.booking_id,
+      p.amount,
+      p.status AS payment_status,
+      p.transferred_at,
+      p.submitted_at,
+      p.slip_image_path,
+      p.reject_reason,
+      b.user_id,
+      b.trip_id,
+      b.status AS booking_status,
+      b.hold_tokens_json,
+      bs.seat_id,
+      u.name,
+      u.phone,
+      u.email
+    FROM payment p
+    JOIN booking b ON b.booking_id = p.booking_id
+    JOIN booking_seat bs ON bs.booking_id = b.booking_id
+    JOIN app_user u ON u.user_id = b.user_id
+    WHERE p.status = 'WAITING_VERIFY'
+    ORDER BY p.submitted_at ASC NULLS LAST, p.created_at ASC`
   );
 
   return rows;

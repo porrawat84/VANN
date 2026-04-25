@@ -1,7 +1,12 @@
 const net = require("net");
 require("dotenv").config();
 
-const { listSeats, holdSeat, confirmSeat, releaseExpiredHolds } = require("./seatService");
+const { sendPasswordResetEmail } = require("./emailService");
+
+// เก็บ OTP ใน Memory  { email → { otp, expiresAt } }
+const otpStore = new Map();
+
+const { listSeats, holdSeat, confirmSeat, releaseExpiredHolds, ensureTripSeats, } = require("./seatService");
 const { createBooking, getBookings, getBookingDetail } = require("./bookingService");
 const { sendChat, getChatHistory, getAdminChatList } = require("./chatService");
 const {
@@ -38,7 +43,7 @@ function broadcastToAdmins(obj) {
 }
 
 // ปล่อย hold หมดอายุ
-setInterval(() => { releaseExpiredHolds().catch(() => {}); }, 1000);
+setInterval(() => { releaseExpiredHolds().catch(() => { }); }, 1000);
 
 const server = net.createServer((socket) => {
   console.log("Client connected:", socket.remoteAddress, socket.remotePort);
@@ -206,17 +211,111 @@ const server = net.createServer((socket) => {
 
         // ---- forgot password
         if (msg.type === "FORGOT_PASSWORD") {
-          console.log("FORGOT_PASSWORD received:", msg.email);
+          const email = (msg.email || "").trim().toLowerCase();
 
-          if (!msg.email) {
+          if (!email) {
             send(socket, { type: "FORGOT_PASSWORD_FAIL", code: "NO_EMAIL" });
             continue;
           }
 
-          send(socket, {
-            type: "FORGOT_PASSWORD_OK",
-            email: msg.email
-          });
+          try {
+            const { pool } = require("./db");
+
+            // เช็คว่า email มีในระบบไหม
+            const { rows } = await pool.query(
+              `SELECT user_id, name FROM app_user WHERE LOWER(email) = $1`,
+              [email]
+            );
+
+            if (rows.length === 0) {
+              // ไม่บอกว่าไม่มี email เพื่อความปลอดภัย
+              send(socket, { type: "FORGOT_PASSWORD_OK" });
+              continue;
+            }
+
+            const user = rows[0];
+
+            // สร้าง OTP 6 หลัก
+            const otp = String(Math.floor(100000 + Math.random() * 900000));
+            const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 นาที
+
+            // เก็บใน Map
+            otpStore.set(email, { otp, expiresAt, userId: user.user_id });
+
+            // ส่งอีเมล
+            await sendPasswordResetEmail(email, otp, user.name);
+
+            console.log(`OTP sent to ${email}: ${otp}`);
+            reply({ type: "FORGOT_PASSWORD_OK" });
+
+          } catch (err) {
+            console.error("FORGOT_PASSWORD error:", err);
+            send(socket, { type: "FORGOT_PASSWORD_FAIL", code: "SERVER_ERROR" });
+          }
+
+          continue;
+        }
+
+        // ---- reset password (กรอก OTP + password ใหม่)
+        if (msg.type === "RESET_PASSWORD") {
+          const email = (msg.email || "").trim().toLowerCase();
+          const otp = (msg.otp || "").trim();
+          const password = (msg.password || "").trim();
+
+          if (!email || !otp || !password) {
+            send(socket, { type: "RESET_PASSWORD_FAIL", code: "MISSING_FIELDS" });
+            continue;
+          }
+
+          if (password.length < 6) {
+            send(socket, { type: "RESET_PASSWORD_FAIL", code: "PASSWORD_TOO_SHORT" });
+            continue;
+          }
+
+          const record = otpStore.get(email);
+
+          if (!record) {
+            send(socket, { type: "RESET_PASSWORD_FAIL", code: "OTP_NOT_FOUND" });
+            continue;
+          }
+
+          if (new Date() > record.expiresAt) {
+            otpStore.delete(email);
+            send(socket, { type: "RESET_PASSWORD_FAIL", code: "OTP_EXPIRED" });
+            continue;
+          }
+
+          if (record.otp !== otp) {
+            send(socket, { type: "RESET_PASSWORD_FAIL", code: "OTP_WRONG" });
+            continue;
+          }
+
+          try {
+            const crypto = require("crypto");
+            const { pool } = require("./db");
+
+            // Hash password ใหม่ (ใช้วิธีเดียวกับ authService.js)
+            const salt = crypto.randomBytes(16).toString("hex");
+            const hash = crypto
+              .pbkdf2Sync(password, salt, 120000, 32, "sha256")
+              .toString("hex");
+            const passwordHash = `pbkdf2$120000$${salt}$${hash}`;
+
+            await pool.query(
+              `UPDATE app_user SET password_hash = $1 WHERE user_id = $2`,
+              [passwordHash, record.userId]
+            );
+
+            // ลบ OTP ออกจาก Map ทันที ใช้ได้ครั้งเดียว
+            otpStore.delete(email);
+
+            console.log(`Password reset success for userId: ${record.userId}`);
+            reply({ type: "RESET_PASSWORD_OK" });
+
+          } catch (err) {
+            console.error("RESET_PASSWORD error:", err);
+            send(socket, { type: "RESET_PASSWORD_FAIL", code: "SERVER_ERROR" });
+          }
 
           continue;
         }
@@ -228,7 +327,7 @@ const server = net.createServer((socket) => {
         }
 
         if (msg.type === "GET_TODAY_TRIPS") {
-          const now = bangkokNow(); // เวลาไทย
+          const now = bangkokNow();
 
           const trips = [];
           for (const dest of DESTS) {
@@ -238,12 +337,16 @@ const server = net.createServer((socket) => {
               trips.push({
                 tripId,
                 dest,
-                hhmm: t
+                hhmm: t,
               });
             }
           }
 
-          send(socket, { type: "TODAY_TRIPS", date: now.toISOString(), trips });
+          reply({
+            type: "TODAY_TRIPS",
+            date: now.toISOString(),
+            trips,
+          });
           continue;
         }
 
@@ -640,7 +743,7 @@ const server = net.createServer((socket) => {
           reply({ type: "ADMIN_REJECT_PAYMENT_OK", bookingId: msg.bookingId });
           continue;
         }
-        
+
         if (msg.type === "ADMIN_GET_SEATS") {
           if (clientInfo.role !== "ADMIN") {
             reply({ type: "ERROR", code: "FORBIDDEN" });
@@ -651,6 +754,7 @@ const server = net.createServer((socket) => {
             continue;
           }
           try {
+            await ensureTripSeats(msg.tripId);
             const seats = await getAdminSeats(msg.tripId);
             reply({ type: "ADMIN_GET_SEATS_OK", seats });
           } catch (err) {

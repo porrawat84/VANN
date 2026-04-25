@@ -16,17 +16,20 @@ async function sendChat({ userId, sender, message }) {
 
 async function getChatHistory(userId, limit = 50) {
   const { rows } = await pool.query(
-    `SELECT chat_id, user_id, sender, message, created_at
-     FROM chat
-     WHERE user_id = $1
-     ORDER BY created_at ASC
-     LIMIT $2`,
+    `SELECT *
+     FROM (
+       SELECT chat_id, user_id, sender, message, created_at
+       FROM chat
+       WHERE user_id = $1
+       ORDER BY created_at DESC
+       LIMIT $2
+     ) t
+     ORDER BY created_at ASC`,
     [userId, limit]
   );
 
   return rows;
 }
-
 async function getAdminChatList() {
   const { rows } = await pool.query(
     `WITH last_msg AS (
