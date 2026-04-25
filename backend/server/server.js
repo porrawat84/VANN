@@ -12,13 +12,12 @@ const {
   approvePayment,
   rejectPayment
 } = require("./paymentService");
-const { isBookingOpen } = require("./tripUtil");
-const { registerUser, loginUser, getUserRole } = require("./authService");
-const { DESTS, TIMES, bangkokNow, makeTripId } = require("./tripUtil");
-
 const {
   getAdminSeats,
 } = require("./adminService");
+const { isBookingOpen } = require("./tripUtil");
+const { registerUser, loginUser, updateUserProfile, getUserRole } = require("./authService");
+const { DESTS, TIMES, bangkokNow, makeTripId } = require("./tripUtil");
 
 const PORT = Number(process.env.PORT || 9000);
 
@@ -39,7 +38,7 @@ function broadcastToAdmins(obj) {
 }
 
 // ปล่อย hold หมดอายุ
-setInterval(() => { releaseExpiredHolds().catch(() => { }); }, 1000);
+setInterval(() => { releaseExpiredHolds().catch(() => {}); }, 1000);
 
 const server = net.createServer((socket) => {
   console.log("Client connected:", socket.remoteAddress, socket.remotePort);
@@ -164,9 +163,45 @@ const server = net.createServer((socket) => {
           clientInfo.userId = Number(r.userId);
           clientInfo.role = r.role;
 
-          send(socket, { type: "SIGN_IN_OK", userId: clientInfo.userId, role: clientInfo.role, name: r.name, phone: r.phone, email: r.email });
+          send(socket, {
+            type: "SIGN_IN_OK",
+            userId: clientInfo.userId,
+            role: clientInfo.role,
+            name: r.name,
+            phone: r.phone,
+            email: r.email,
+          });
           continue;
         }
+
+        if (msg.type === "UPDATE_PROFILE") {
+          if (actorUserId == null) {
+            reply({ type: "ERROR", code: "AUTH_REQUIRED" });
+            continue;
+          }
+
+          const r = await updateUserProfile({
+            userId: actorUserId,
+            name: msg.name,
+            phone: msg.phone,
+          });
+
+          if (!r.ok) {
+            reply({ type: "UPDATE_PROFILE_FAIL", code: r.code });
+            continue;
+          }
+
+          reply({
+            type: "UPDATE_PROFILE_OK",
+            userId: r.userId,
+            name: r.name,
+            phone: r.phone,
+            email: r.email,
+            role: r.role,
+          });
+          continue;
+        }
+
         // ---- forgot password
         if (msg.type === "FORGOT_PASSWORD") {
           console.log("FORGOT_PASSWORD received:", msg.email);
@@ -604,10 +639,14 @@ const server = net.createServer((socket) => {
           reply({ type: "ADMIN_REJECT_PAYMENT_OK", bookingId: msg.bookingId });
           continue;
         }
-
+        
         if (msg.type === "ADMIN_GET_SEATS") {
           if (clientInfo.role !== "ADMIN") {
             reply({ type: "ERROR", code: "FORBIDDEN" });
+            continue;
+          }
+          if (!msg.tripId) {
+            reply({ type: "ERROR", code: "MISSING_TRIP_ID" });
             continue;
           }
           try {
