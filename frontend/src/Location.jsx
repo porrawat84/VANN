@@ -37,9 +37,7 @@ function Location({ goNext, goChat }) {
         </button>
       </div>
 
-      <button className="location-chat-btn" onClick={goChat}>
-        chat with admin
-      </button>
+      
     </div>
   );
 }

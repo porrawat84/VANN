@@ -30,7 +30,7 @@ const ProfileIcon = () => (
 const UserBottomNav = ({ goPage, currentPage, chatUnread = 0 }) => {
   const navItems = [
     { page: 'location', label: 'Home',   Icon: HomeIcon    },
-    { page: 'chat',     label: 'Chat',        Icon: ChatIcon,  badge: chatUnread },
+    { page: 'userChat',     label: 'Chat',        Icon: ChatIcon,  badge: chatUnread },
     { page: 'myticket', label: 'My Tickets', Icon: TicketIcon  },
     { page: 'profile',  label: 'Profile',   Icon: ProfileIcon },
   ];

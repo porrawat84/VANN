@@ -1,0 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Grandstander:wght@400;600;700&display=swap');
+
+/* ===== Page ===== */
+.myticket-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 20px 120px;
+}
+
+/* ===== Logo ===== */
+.myticket-logo {
+  display: block;
+  width: 60%;
+  max-width: 220px;
+  margin: 10px auto 16px;
+}
+
+/* ===== Card ===== */
+.myticket-card {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  background-color: #fff4b0;
+  border-radius: 30px;
+  border: 1px solid black;
+  padding: 24px 20px 20px;
+  box-shadow: 0 12px 25px rgba(0,0,0,0.25);
+}
+
+/* ===== Close button ===== */
+.myticket-close {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 1;
+  color: #555;
+}
+
+/* ===== Title ===== */
+.myticket-title {
+  font-family: 'Grandstander', cursive;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+/* ===== List ===== */
+.myticket-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ===== Ticket Item ===== */
+.ticket-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fdf9f9;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  padding: 12px 14px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.08);
+  font-family: 'Grandstander', cursive;
+  font-size: 14px;
+  color: #333;
+}
+
+.ticket-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.ticket-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ticket-dest {
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: lowercase;
+}
+
+.ticket-line {
+  font-size: 12px;
+  color: #666;
+}
+
+/* ===== Status Badge ===== */
+.ticket-status {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid black;
+  text-align: center;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: 'Grandstander', cursive;
+}
+
+.ticket-status.success {
+  background-color: #b7f2c0;
+}
+
+.ticket-status.waiting {
+  background-color: #f2e4b7;
+}
+
+.ticket-status.default {
+  background-color: #e0e0e0;
+}

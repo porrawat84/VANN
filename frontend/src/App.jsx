@@ -8,6 +8,8 @@ import Forgetpass from "./Forgetpass";
 import UserBottomNav from './UserBottomNav';
 import Payment from "./Payment";
 import UserChat from "./UserChat";
+import Profile from "./Profile";
+import MyTicket from "./MyTicket";
 
 import AdminBottomNav from "./Admin/BottomNav";
 import AdminHome from "./Admin/Home";
@@ -102,10 +104,10 @@ export default function App() {
 
   //const didInit = useRef(false);
   const didHello = useRef(false);
-    //if (didInit.current) return;อยู่ในuseEffect
-    //didInit.current = true;อยู่ในuseEffect
+  //if (didInit.current) return;อยู่ในuseEffect
+  //didInit.current = true;อยู่ในuseEffect
 
-    //window.tcp.offAllMessages?.();
+  //window.tcp.offAllMessages?.();
   useEffect(() => {
     if (!window.tcp?.onMessage) {
       console.error("window.tcp.onMessage not available");
@@ -192,7 +194,7 @@ export default function App() {
   const [selectedChat, setSelectedChat] = useState(null);
 
   const goTo = (nextPage, data = null) => {
-    if (data) setSelectedChat(data); 
+    if (data) setSelectedChat(data);
     setPage(nextPage);
   };
 
@@ -254,14 +256,17 @@ export default function App() {
         notify={notify}
       />
     ),
-    
+
+    profile: <Profile goPage={goTo} />,
+    myticket: <MyTicket goPage={goTo} />,
+
 
     //Admin
     adminHome: <AdminHome goPage={goTo} />,
     adminLocation: <AdminLocation goPage={goTo} />,
     dataseat: <Dataseat goPage={goTo} tcpRequest={tcpRequest} notify={notify} />,
 
-   adminDashboardChat: (
+    adminDashboardChat: (
       <AdminDashboardChat
         goChat={(chat) => {
           setSelectedChat(chat);
@@ -298,7 +303,14 @@ export default function App() {
     <>
       {pages[page] || <div>Page not found</div>}
 
-      
+      {["location", "time", "seat", "userChat", "profile", "myticket"].includes(page) && (
+        <UserBottomNav
+          goPage={goTo}
+          currentPage={page}
+          chatUnread={0}
+        />
+      )}
+
 
       {toast && (
         <div className={`app-toast app-toast--${toast.type}`} role="status" aria-live="polite">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import "./MyTicket.css";
+import "./cssMyTicket.css";
 import bg from "./assets/image/background.png";
 import logo from "./assets/image/logo.png";
 import UserBottomNav from "./UserBottomNav";
