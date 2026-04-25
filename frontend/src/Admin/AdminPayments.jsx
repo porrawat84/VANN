@@ -4,6 +4,7 @@ import BottomNav from "./BottomNav";
 
 export default function AdminPayments({ goPage, tcpRequest, notify }) {
     const [payments, setPayments] = useState([]);
+    const [selectedPayment, setSelectedPayment] = useState(null);
     const [selectedSlip, setSelectedSlip] = useState(null);
     const [loading, setLoading] = useState(false);
 
@@ -128,15 +129,16 @@ export default function AdminPayments({ goPage, tcpRequest, notify }) {
                             payments.map((p) => (
                                 <tr key={p.payment_id}>
                                     <td className="booking-cell">
-                                        To : {p.to || p.destination || "Mochit"} <br />
-                                        Time : {p.time || p.trip_time || "-"} <br />
-                                        seat : {p.seat || p.seat_no || "-"}
+                                        To : {p.destination || "-"} <br />
+                                        Time : {p.departure_time || "-"} <br />
+                                        seat : {p.seat_no || "-"}
                                     </td>
 
                                     <td className="info-cell">
                                         username : {p.name} <br />
                                         phone : {p.phone || "-"} <br />
-                                        trip : {p.trip_id} <br />
+                                        paid time : {p.paytime || "-"} <br />
+                                        paid date : {p.paydate || "-"} <br />
                                         amount : {(Number(p.amount) / 100).toFixed(2)} ฿
                                     </td>
 

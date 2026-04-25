@@ -25,7 +25,7 @@ export default function BottomNav({ goPage, currentPage }) {
         currentPage === "dataseat";
 
     const isPaymentPage =
-        currentPage === "adminPayment";
+        currentPage === "adminPayments";
 
     const handleClick = (page) => {
         goPage(page);
@@ -41,7 +41,7 @@ export default function BottomNav({ goPage, currentPage }) {
                 />
             </span>
 
-            <span onClick={() => handleClick("adminPayment")}>
+            <span onClick={() => handleClick("adminPayments")}>
                 <img
                     src={isPaymentPage ? paymentSelect : payment}
                     alt=""

@@ -312,7 +312,7 @@ export default function App() {
 
     adminPayments: (
       <AdminPayments
-        goPage={goTo}
+        goPage={setPage}
         tcpRequest={tcpRequest}
         notify={notify}
       />

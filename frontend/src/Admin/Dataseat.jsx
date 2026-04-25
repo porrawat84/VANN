@@ -13,6 +13,7 @@ export default function Dataseat({ goPage, tcpRequest, notify }) {
 
     // popup รูป
     const [selectedSlip, setSelectedSlip] = useState(null);
+    const [selectedPayment, setSelectedPayment] = useState(null);
 
     const [editingId, setEditingId] = useState(null);
     const [draft, setDraft] = useState({});
@@ -75,14 +76,44 @@ export default function Dataseat({ goPage, tcpRequest, notify }) {
                     return;
                 }
 
-                const mapped = res.seats.map(s => ({
-                    id: s.seat_number,
-                    name: s.name || "-",
-                    phone: s.phone || "-",
-                    price: s.total_price ? (Number(s.total_price) / 100).toFixed(2) : "-",
-                    status: mapStatus(s.payment_status),
-                    slip: null,
-                }));
+                const allSeatNumbers = [
+                    "A1", "A2",
+                    "B1", "B2", "B3",
+                    "C1", "C2", "C3",
+                    "D1", "D2", "D3",
+                ];
+
+                const bookedSeats = res.seats || [];
+
+                const mapped = allSeatNumbers.map((seatNo) => {
+                    const booking = bookedSeats.find(
+                        (s) => s.seat_number === seatNo
+                    );
+
+                    if (!booking) {
+                        return {
+                            id: seatNo,
+                            name: "-",
+                            phone: "-",
+                            price: "-",
+                            status: "empty",
+                            slip: null,
+                        };
+                    }
+
+                    return {
+                        id: seatNo,
+                        name: booking.name || "-",
+                        phone: booking.phone || "-",
+                        price: booking.total_price
+                            ? (Number(booking.total_price) / 100).toFixed(2)
+                            : "-",
+                        status: mapStatus(booking.payment_status),
+                        slip: null,
+                    };
+                });
+
+                setSeats(mapped);
 
                 setSeats(mapped);
             } catch (e) {
@@ -145,117 +176,102 @@ export default function Dataseat({ goPage, tcpRequest, notify }) {
                     </thead>
 
                     <tbody>
-                        {filteredSeats.map((s) => (
-                            <tr key={s.id}>
-                                <td>{s.id}</td>
-
-                                {/* 🟡 INFORMATION */}
-                                <td>
-                                    {editingId === s.id ? (
-                                        <>
-                                            username :
-                                            <input
-                                                value={draft.name}
-                                                onChange={(e) =>
-                                                    setDraft({ ...draft, name: e.target.value })
-                                                }
-                                            />
-                                            <br />
-
-                                            phone :
-                                            <input
-                                                value={draft.phone}
-                                                onChange={(e) =>
-                                                    setDraft({ ...draft, phone: e.target.value })
-                                                }
-                                            />
-                                            <br />
-
-                                            price :
-                                            <input
-                                                value={draft.price}
-                                                onChange={(e) =>
-                                                    setDraft({ ...draft, price: e.target.value })
-                                                }
-                                            />
-                                        </>
-                                    ) : (
-                                        <>
-                                            username : {s.name} <br />
-                                            phone : {s.phone} <br />
-                                            price : {s.price}
-                                        </>
-                                    )}
-
-                                    {/* 🔘 EDIT BUTTON */}
-                                    {editingId === s.id ? (
-                                        <div className="btn-groupedit">
-                                            <button
-                                                className="btn save"
-                                                onClick={() => {
-                                                    setSeats((prev) =>
-                                                        prev.map((seat) =>
-                                                            seat.id === s.id ? draft : seat
-                                                        )
-                                                    );
-                                                    setEditingId(null);
-                                                }}
-                                            >
-                                                save
-                                            </button>
-
-                                            <button
-                                                className="btn cancel" onClick={() => setEditingId(null)}>
-                                                cancel
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <button
-                                            className="btn edit"
-                                            onClick={() => {
-                                                setEditingId(s.id);
-                                                setDraft(s);
-                                            }}
-                                        >
-                                            edit
-                                        </button>
-                                    )}
-                                </td>
-
-
-                                {/* 💰 PAYMENT */}
-                                <td>
-                                    <select
-                                        className={`status ${s.status}`}
-                                        value={s.status}
-                                        onChange={(e) => {
-                                            const newStatus = e.target.value;
-                                            setSeats((prev) =>
-                                                prev.map((seat) =>
-                                                    seat.id === s.id
-                                                        ? { ...seat, status: newStatus }
-                                                        : seat
-                                                )
-                                            );
-                                        }}
-                                    >
-                                        <option value="empty">no select</option>
-                                        <option value="waiting">waiting</option>
-                                        <option value="success">success</option>
-                                    </select>
-
-                                    {/* 👉 ปุ่มดูสลิป */}
-                                    {s.slip && (
-                                        <button
-                                            className="slip-btn"
-                                            onClick={() => setSelectedSlip(s.slip)}
-                                        >
-                                            🖼
-                                        </button>
-                                    )}
+                        {filteredSeats.length === 0 ? (
+                            <tr>
+                                <td colSpan="3" style={{ textAlign: "center", padding: "20px" }}>
+                                    no seats data
                                 </td>
                             </tr>
-                        ))}
+                        ) : (
+                            filteredSeats.map((s) => (
+                                <tr key={s.id}>
+                                    <td>{s.id}</td>
+
+                                    <td>
+                                        {editingId === s.id ? (
+                                            <>
+                                                username :
+                                                <input
+                                                    value={draft.name}
+                                                    onChange={(e) =>
+                                                        setDraft({ ...draft, name: e.target.value })
+                                                    }
+                                                />
+                                                <br />
+
+                                                phone :
+                                                <input
+                                                    value={draft.phone}
+                                                    onChange={(e) =>
+                                                        setDraft({ ...draft, phone: e.target.value })
+                                                    }
+                                                />
+                                                <br />
+
+                                                price :
+                                                <input
+                                                    value={draft.price}
+                                                    onChange={(e) =>
+                                                        setDraft({ ...draft, price: e.target.value })
+                                                    }
+                                                />
+
+                                                <div className="btn-groupedit">
+                                                    <button
+                                                        className="btn save"
+                                                        onClick={() => {
+                                                            setSeats((prev) =>
+                                                                prev.map((seat) =>
+                                                                    seat.id === s.id ? { ...seat, ...draft } : seat
+                                                                )
+                                                            );
+                                                            setEditingId(null);
+                                                        }}
+                                                    >
+                                                        save
+                                                    </button>
+
+                                                    <button
+                                                        className="btn cancel"
+                                                        onClick={() => setEditingId(null)}
+                                                    >
+                                                        cancel
+                                                    </button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                username : {s.name} <br />
+                                                phone : {s.phone} <br />
+                                                price : {s.price}
+
+                                                <br />
+
+                                                <button
+                                                    className="btn edit"
+                                                    onClick={() => {
+                                                        setEditingId(s.id);
+                                                        setDraft(s);
+                                                    }}
+                                                >
+                                                    edit
+                                                </button>
+                                            </>
+                                        )}
+                                    </td>
+
+                                    <td>
+                                        <button
+                                            className={`payment-status ${s.status}`}
+                                            disabled={s.status !== "waiting"}
+                                            onClick={() => setSelectedPayment(s)}
+                                        >
+                                            {getStatusText(s.status)}
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
                     </tbody>
                 </table>
             </div>
@@ -264,6 +280,76 @@ export default function Dataseat({ goPage, tcpRequest, notify }) {
                 <div className="popup" onClick={() => setSelectedSlip(null)}>
                     <div className="popup-content">
                         <img src={selectedSlip} alt="slip" />
+                    </div>
+                </div>
+            )}
+            {selectedPayment && (
+                <div className="popup" onClick={() => setSelectedPayment(null)}>
+                    <div className="payment-popup" onClick={(e) => e.stopPropagation()}>
+
+                        <div className="payment-popup-table">
+
+                            {/* booking */}
+                            <div className="popup-booking">
+                                To : - <br />
+                                Time : - <br />
+                                seat : {selectedPayment.id}
+                            </div>
+
+                            {/* info */}
+                            <div className="popup-info">
+                                username : {selectedPayment.name} <br />
+                                phone : {selectedPayment.phone} <br />
+                                paid time : - <br />
+                                paid date : - <br />
+                                amount : {selectedPayment.price} ฿
+                            </div>
+
+                            {/* action */}
+                            <div className="popup-action">
+
+                                <button
+                                    className="reject-btn"
+                                    onClick={() => {
+                                        setSeats((prev) =>
+                                            prev.map((seat) =>
+                                                seat.id === selectedPayment.id
+                                                    ? {
+                                                        ...seat,
+                                                        status: "empty",
+                                                        name: "-",
+                                                        phone: "-",
+                                                        price: "-"
+                                                    }
+                                                    : seat
+                                            )
+                                        );
+                                        setSelectedPayment(null);
+                                    }}
+                                >
+                                    reject
+                                </button>
+
+                                <button
+                                    className="accept-btn"
+                                    onClick={() => {
+                                        setSeats((prev) =>
+                                            prev.map((seat) =>
+                                                seat.id === selectedPayment.id
+                                                    ? { ...seat, status: "success" }
+                                                    : seat
+                                            )
+                                        );
+                                        setSelectedPayment(null);
+                                    }}
+                                >
+                                    accept
+                                </button>
+
+                            </div>
+
+                        </div>
+
                     </div>
                 </div>
             )}

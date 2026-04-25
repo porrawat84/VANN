@@ -226,3 +226,70 @@
     background: #b6f2b6;
     color: #111;
 }
+
+
+.slip-btn {
+    background: transparent;
+    border: none;
+    font-size: 32px;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.reject-btn,
+.accept-btn {
+    width: 70px;
+    height: 20px;
+    border-radius: 22px;
+    border: 1px solid #000;
+    font-size: 11px;
+    font-family: 'Grandstander', cursive;
+    cursor: pointer;
+    display: block;
+    margin: 8px auto;
+}
+
+.reject-btn {
+    background: #ff9b9b;
+}
+
+.accept-btn {
+    background: #d7ffc2;
+}
+
+.btn-groupedit {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+
+}
+
+.btn {
+    border: 1.5px solid #000;
+    border-radius: 15px;
+    padding: 3px 12px;
+    font-family: 'Grandstander', cursive;
+    cursor: pointer;
+}
+
+.btn.edit {
+    margin-top: 8px;
+    background: #c4c4c4;
+}
+
+.btn.save {
+    background: #95e876;
+}
+
+.btn.cancel {
+    background: #f65f5f;
+}
+
+.seat-table input {
+    width: 90px;
+    margin: 3px 0 3px 5px;
+    border-radius: 8px;
+    border: 1px solid #aaa;
+    padding: 3px 6px;
+    font-family: 'Grandstander', cursive;
+}
