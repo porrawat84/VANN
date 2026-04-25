@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "./UserChat.css";
+import bg from "./assets/image/background.png";
 
 function formatDayTag(v) {
   if (!v) return "";
@@ -13,6 +14,7 @@ export default function UserChat({ goBack, tcpRequest, notify }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const bottomRef = useRef(null);
+
 
   const loadHistory = async () => {
     try {
@@ -85,7 +87,15 @@ export default function UserChat({ goBack, tcpRequest, notify }) {
   };
 
   return (
-    <div className="user-chat-page">
+    <div
+  className="user-chat-page"
+  style={{
+    backgroundImage: `url(${bg})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+  }}
+>
       <div className="user-chat-logo">VANN</div>
 
       <div className="user-chat-card">

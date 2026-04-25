@@ -42,12 +42,12 @@ body {
 }
 
 .location-logo {
-    position: absolute;
-    left: 23%;
-    width: 240px;
-    margin-top: -10%;
-    margin-top: -5%;
-    margin-bottom: 20px
+  position: absolute;
+  left: 23%;
+  width: 240px;
+  margin-top: -5%;
+  margin-bottom: 20px;
+  top: 20px; /* เพิ่มบรรทัดนี้ */
 }
 
 h2 {
@@ -94,4 +94,15 @@ h3 {
     color: #111;
 
     margin-top: 40px;
+}
+
+.home-tagline {
+    position: absolute;
+  top: 220px;          /* ปรับให้อยู่ใต้โลโก้พอดี */
+  width: 100%;
+  text-align: center;
+  font-family: 'Grandstander', cursive;
+  font-size: 16px;
+  color: #000000;
+  margin: 0;
 }

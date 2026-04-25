@@ -11,6 +11,7 @@ function Location({ goPage}) {
     return (
         <div className="app" >
             <img src={logo} className="location-logo" />
+            <p className="home-tagline">for admin</p>
             <div className="location-container">
             <div className="content location">
 

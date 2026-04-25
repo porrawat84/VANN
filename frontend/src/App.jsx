@@ -258,7 +258,13 @@ export default function App() {
     ),
 
     profile: <Profile goPage={goTo} />,
-    myticket: <MyTicket goPage={goTo} />,
+    myticket: (
+      <MyTicket
+        goPage={goTo}
+        tcpRequest={tcpRequest}
+        notify={notify}
+      />
+    ),
 
 
     //Admin
