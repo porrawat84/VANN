@@ -249,8 +249,14 @@ const server = net.createServer((socket) => {
 
         // ---- seat
         if (msg.type === "LIST_SEATS") {
-          const seats = await listSeats(msg.tripId);
-          reply({ type: "SEATS", tripId: msg.tripId, seats });
+          const tripId = String(msg.tripId || "");
+          if (!tripId) {
+            reply({ type: "ERROR", code: "BAD_TRIP_ID" });
+            continue;
+          }
+
+          const seats = await listSeats(tripId);
+          reply({ type: "SEATS", tripId, seats });
           continue;
         }
 

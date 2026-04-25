@@ -13,7 +13,7 @@ import MyTicket from "./MyTicket";
 
 import AdminBottomNav from "./Admin/BottomNav";
 import AdminHome from "./Admin/Home";
-import AdminLocation from "./Admin/Location";
+import AdminLocation from "./Admin/AdminLocation";
 import Dataseat from "./Admin/Dataseat";
 import AdminDashboardChat from "./Admin/DashboardChat";
 import AdminChatRoom from "./Admin/ChatRoom";
@@ -67,6 +67,7 @@ export default function App() {
   const [selectedTripId, setSelectedTripId] = useState(null);
   const [authUserId, setAuthUserId] = useState(null);
   const [toast, setToast] = useState(null);
+  const [adminTrip, setAdminTrip] = useState(null);
   const [userId, setUserId] = useState(() => {
     const s = localStorage.getItem("userId");
     return s ? Number(s) : null;
@@ -284,8 +285,6 @@ export default function App() {
 
     //Admin
     adminHome: <AdminHome goPage={goTo} />,
-    adminLocation: <AdminLocation goPage={goTo} />,
-    dataseat: <Dataseat goPage={goTo} tcpRequest={tcpRequest} notify={notify} />,
 
     adminDashboardChat: (
       <AdminDashboardChat
@@ -318,7 +317,25 @@ export default function App() {
       />
     ),
 
-  };
+    adminLocation: (
+      <AdminLocation
+        goPage={goTo}
+        tcpRequest={tcpRequest}
+        notify={notify}
+        setAdminTrip={setAdminTrip}
+      />
+    ),
+
+    dataseat: (
+      <Dataseat
+        goPage={goTo}
+        tcpRequest={tcpRequest}
+        notify={notify}
+        adminTrip={adminTrip}
+      />
+    ),
+
+      };
 
   return (
     <>
