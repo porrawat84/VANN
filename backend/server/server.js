@@ -314,11 +314,11 @@ const server = net.createServer((socket) => {
 
         if (msg.type === "GET_BOOKINGS") {
           if (!actorUserId) {
-            send(socket, { type: "ERROR", code: "AUTH_REQUIRED" });
+            reply(socket, { type: "ERROR", code: "AUTH_REQUIRED" });
             continue;
           }
           const rows = await getBookings(actorUserId);
-          send(socket, { type: "BOOKINGS", bookings: rows });
+          reply(socket, { type: "BOOKINGS", bookings: rows });
           continue;
         }
 

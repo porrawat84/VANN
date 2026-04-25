@@ -1,0 +1,112 @@
+.myticket-page {
+  min-height: 100vh;
+  padding: 22px 18px 96px;
+  box-sizing: border-box;
+}
+
+.myticket-logo {
+  display: block;
+  width: 130px;
+  margin: 0 auto 10px;
+}
+
+.myticket-card {
+  max-width: 360px;
+  margin: 0 auto;
+  background: #f3c9cf;
+  border: 2px solid #2d2d2d;
+  border-radius: 28px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.16);
+  min-height: 62vh;
+  padding: 14px 14px 18px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.myticket-close {
+  position: absolute;
+  left: 12px;
+  top: 8px;
+  border: none;
+  background: transparent;
+  font-size: 34px;
+  cursor: pointer;
+  color: #222;
+}
+
+.myticket-title {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 14px;
+  color: #1f1f1f;
+}
+
+.myticket-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ticket-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #fff;
+  border: 2px solid #333;
+  border-radius: 20px;
+  box-shadow: 0 5px 10px rgba(0,0,0,0.12);
+  padding: 14px 14px;
+}
+
+.ticket-icon {
+  font-size: 34px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.ticket-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.ticket-dest {
+  font-size: 16px;
+  font-weight: 800;
+  color: #222;
+  margin-bottom: 4px;
+  text-transform: lowercase;
+}
+
+.ticket-line {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.45;
+}
+
+.ticket-status {
+  align-self: center;
+  min-width: 72px;
+  text-align: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 800;
+  border: 2px solid #333;
+  text-transform: lowercase;
+}
+
+.ticket-status.waiting {
+  background: #ffe78a;
+  color: #6a5600;
+}
+
+.ticket-status.success {
+  background: #b8f3b8;
+  color: #165a16;
+}
+
+.ticket-status.default {
+  background: #eaeaea;
+  color: #444;
+}
