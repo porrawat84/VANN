@@ -1,67 +1,124 @@
-/* Profile.css */
-.profile-container {
-    width: 100%;
-    max-width: 420px;
-    margin: 0 auto;
+@import url('https://fonts.googleapis.com/css2?family=Grandstander:wght@400;600;700&display=swap');
 
-    height: 100vh;
-    position: relative;
-
-    background: #F0F0F0;
-    overflow: hidden;
+.admin-profile-page {
+  min-height: 100vh;
+  max-width: 420px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 20px 100px;
+  box-sizing: border-box;
+  background: #f0f0f0;
 }
 
-.profile-card {
-    background: #ffffff;
-    border-radius: 20px;
-    padding: 24px;
-    width: 100%;
-    max-width: 400px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+/* ===== Avatar ===== */
+.admin-profile-avatar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 24px 0 20px;
 }
 
-.profile-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+.admin-profile-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background-color: #fff4b0;
+  border: 3px solid black;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.profile-avatar {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-bottom: 16px;
+.admin-profile-avatar-img {
+  width: 80%;
+  object-fit: contain;
 }
 
-.profile-name {
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 4px;
+.admin-profile-name {
+  margin: 10px 0 2px;
+  font-size: 20px;
+  font-weight: 700;
+  font-family: 'Grandstander', cursive;
 }
 
-.profile-email {
-    color: #6b7280;
-    margin-bottom: 20px;
+.admin-profile-role {
+  margin: 0;
+  font-size: 13px;
+  color: #888;
+  font-family: 'Grandstander', cursive;
+  background: #fff4b0;
+  border: 1px solid black;
+  border-radius: 20px;
+  padding: 2px 14px;
 }
 
-.logout-btn {
-    width: 100%;
-    padding: 10px;
-    border: none;
-    border-radius: 10px;
-    background: #ef4444;
-    color: white;
-    font-weight: 500;
-    cursor: pointer;
-    transition: 0.2s;
+/* ===== Box ===== */
+.admin-profile-box {
+  width: 100%;
+  max-width: 380px;
+  background-color: #fff4b0;
+  padding: 20px;
+  border-radius: 30px;
+  border: 1px solid black;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 12px 25px rgba(0,0,0,0.25);
 }
 
-.logout-btn:hover {
-    background: #dc2626;
+.admin-profile-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #888;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: 'Grandstander', cursive;
 }
 
-.logout-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+.admin-profile-box label {
+  font-size: 14px;
+  font-family: 'Grandstander', cursive;
+}
+
+.admin-profile-value {
+  width: 100%;
+  height: 42px;
+  border-radius: 20px;
+  background: #fdf9f9;
+  box-shadow: inset 0 3px 5px rgba(0,0,0,0.2);
+  padding: 0 15px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-family: 'Grandstander', cursive;
+  color: #333;
+}
+
+/* ===== Logout ===== */
+.admin-logout-btn {
+  width: 100%;
+  height: 42px;
+  border-radius: 20px;
+  border: 1px solid black;
+  background-color: #f2b7b7;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Grandstander', cursive;
+  margin-top: 8px;
+  color: #000;
+}
+
+.admin-logout-btn:hover {
+  background-color: #e89a9a;
+}
+
+.admin-logout-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

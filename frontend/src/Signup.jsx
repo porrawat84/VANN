@@ -49,6 +49,11 @@ export default function Signup({ goBack, notify }) {
             return false;
         }
 
+        if (phone.length !== 10) {
+            notify?.("เบอร์โทรศัพท์ต้องมี 10 ตัวอักษร", "error");
+            return false;
+        }
+
         // เช็คว่ารหัสผ่าน 2 ช่องตรงกันไหม
         if (password !== confirmPassword) {
             return false;
