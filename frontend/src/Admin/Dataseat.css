@@ -201,3 +201,28 @@
     gap: 6px;
     padding: 4px 2px;
 }
+
+/*สี status */
+.status {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 8px;
+    border: 1px solid black;
+    width: 70px;
+}
+
+/* สีแต่ละสถานะ */
+.status.empty {
+    background: #ddd;
+    color: #333;
+}
+
+.status.waiting {
+    background: #fff3a3;
+    color: #333;
+}
+
+.status.success {
+    background: #b6f2b6;
+    color: #111;
+}

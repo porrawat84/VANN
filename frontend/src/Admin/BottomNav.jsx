@@ -4,6 +4,9 @@ import "./BottomNav.css";
 import home from "./assets/image/home.png";
 import homeSelect from "./assets/image/home select.png";
 
+import payment from "./assets/image/Payment.png";
+import paymentSelect from "./assets/image/Payment select.png";
+
 import chat from "./assets/image/Chat.png";
 import chatSelect from "./assets/image/chat select.png";
 
@@ -21,6 +24,9 @@ export default function BottomNav({ goPage, currentPage }) {
         currentPage === "adminLocation" ||
         currentPage === "dataseat";
 
+    const isPaymentPage =
+        currentPage === "adminPayment";
+
     const handleClick = (page) => {
         goPage(page);
     };
@@ -31,6 +37,13 @@ export default function BottomNav({ goPage, currentPage }) {
             <span onClick={() => handleClick("adminHome")}>
                 <img
                     src={isHomePage ? homeSelect : home}
+                    alt=""
+                />
+            </span>
+
+            <span onClick={() => handleClick("adminPayment")}>
+                <img
+                    src={isPaymentPage ? paymentSelect : payment}
                     alt=""
                 />
             </span>

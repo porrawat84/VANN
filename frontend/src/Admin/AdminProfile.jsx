@@ -1,5 +1,5 @@
 import { useState } from "react";
-import "./Profile.css";
+import "./AdminProfile.css";
 import BottomNav from "./BottomNav";
 
 

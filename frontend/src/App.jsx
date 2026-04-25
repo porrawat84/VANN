@@ -17,7 +17,7 @@ import AdminLocation from "./Admin/Location";
 import Dataseat from "./Admin/Dataseat";
 import AdminDashboardChat from "./Admin/DashboardChat";
 import AdminChatRoom from "./Admin/ChatRoom";
-import AdminProfile from "./Admin/Profile";
+import AdminProfile from "./Admin/AdminProfile";
 import AdminPayments from "./Admin/AdminPayments";
 import DashboardChat from "./Admin/DashboardChat";
 import ChatRoom from "./Admin/ChatRoom";

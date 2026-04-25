@@ -34,13 +34,13 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    width: 33%;
+    width: 25%;
 }
 
 
 /* รูป icon */
 .bottom-nav img {
-    width: 30px;      /* ขนาด icon */
+    width: 50px;      /* ขนาด icon */
     height: 50px;
     object-fit: contain;
     transition: 0.2s ease;
