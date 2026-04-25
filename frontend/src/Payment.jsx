@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "./cssPayment.css";
+import bg from "./assets/image/background.png";
 
 function destLabel(dest) {
   if (dest === "FP") return "future park rangsit";
@@ -126,7 +127,12 @@ export default function Payment({ data, tcpRequest, notify, goBack, goDone }) {
 
   if (!data) {
     return (
-      <div className="payment-overlay">
+      <div className="payment-overlay" style={{
+        backgroundImage: `url(${bg})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}>
         <div className="payment-card">
           <p>ไม่พบข้อมูลการชำระเงิน</p>
           <button className="payment-confirm-btn" onClick={goBack}>back</button>
@@ -136,7 +142,12 @@ export default function Payment({ data, tcpRequest, notify, goBack, goDone }) {
   }
 
   return (
-    <div className="payment-overlay">
+    <div className="payment-overlay" style={{
+      backgroundImage: `url(${bg})`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat",
+    }}>
       <div className="payment-card">
         <button className="payment-close" onClick={goBack}>×</button>
 

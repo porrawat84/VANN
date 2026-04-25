@@ -1,8 +1,15 @@
 .user-chat-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #a88ce2 0%, #ead3ef 100%);
+  max-width: 420px;        /* เพิ่ม */
+  margin: 0 auto;          /* เพิ่ม */
   padding: 24px 18px;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-size: cover;          /* เพิ่ม */
+  background-position: center;     /* เพิ่ม */
+  background-repeat: no-repeat;    /* เพิ่ม */
 }
 
 .user-chat-logo {

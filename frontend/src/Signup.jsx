@@ -38,6 +38,17 @@ export default function Signup({ goBack, notify }) {
             return false;
         }
 
+        // เช็คอย่างน้อย 8 ตัว และมีพิมพ์ใหญ่
+        if (password.length < 8) {
+            notify?.("รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร", "error");
+            return false;
+        }
+
+        if (!/[A-Z]/.test(password)) {
+            notify?.("รหัสผ่านต้องมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว", "error");
+            return false;
+        }
+
         // เช็คว่ารหัสผ่าน 2 ช่องตรงกันไหม
         if (password !== confirmPassword) {
             return false;
@@ -91,7 +102,7 @@ export default function Signup({ goBack, notify }) {
 
                 <label>password :</label>
                 <input className="input" type="password" name="password" value={formData.password} onChange={handleChange} />
-
+                <p className="password-hint">* อย่างน้อย 8 ตัว และมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว</p>
                 <label>confirm password :</label>
                 <input className="input" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} />
                 <button className="btn signup-purple" onClick={handleSignup}
