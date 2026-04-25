@@ -37,7 +37,6 @@ function formatTime(hhmm) {
 
 export default function AdminLocation({ goPage, tcpRequest, notify }) {
   const savedDest = localStorage.getItem("dest");
-
   const locations = ["Future Park Rangsit", "Mo Chit", "Victory Monument"];
 
   const [selectedLocation, setSelectedLocation] = useState(
@@ -46,7 +45,8 @@ export default function AdminLocation({ goPage, tcpRequest, notify }) {
 
   const [trips, setTrips] = useState([]);
   const [availableMap, setAvailableMap] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [loadingTrips, setLoadingTrips] = useState(false);
+  const [loadingSeats, setLoadingSeats] = useState(false);
 
   useEffect(() => {
     const dest = localStorage.getItem("dest");
@@ -60,7 +60,7 @@ export default function AdminLocation({ goPage, tcpRequest, notify }) {
   useEffect(() => {
     const loadTrips = async () => {
       try {
-        setLoading(true);
+        setLoadingTrips(true);
 
         const res = await tcpRequest({
           type: "GET_TODAY_TRIPS",
@@ -74,9 +74,9 @@ export default function AdminLocation({ goPage, tcpRequest, notify }) {
         }
 
         const normalized = (res.trips || []).map((t) => ({
-          tripId: t.tripId ?? t.trip_id ?? "",
+          tripId: String(t.tripId ?? t.trip_id ?? ""),
           dest: String(t.dest ?? "").toUpperCase(),
-          hhmm: String(t.hhmm ?? t.time ?? ""),
+          hhmm: String(t.hhmm ?? ""),
         }));
 
         setTrips(normalized);
@@ -84,7 +84,7 @@ export default function AdminLocation({ goPage, tcpRequest, notify }) {
         console.error(e);
         notify?.("โหลดรอบรถไม่สำเร็จ", "error");
       } finally {
-        setLoading(false);
+        setLoadingTrips(false);
       }
     };
 
@@ -93,39 +93,52 @@ export default function AdminLocation({ goPage, tcpRequest, notify }) {
   }, []);
 
   const filteredTrips = useMemo(() => {
-    return trips.filter((t) => t.dest === selectedDestCode);
+    return trips
+      .filter((t) => t.dest === selectedDestCode)
+      .sort((a, b) => Number(a.hhmm) - Number(b.hhmm));
   }, [trips, selectedDestCode]);
 
   useEffect(() => {
     let cancelled = false;
 
     const loadAvailableCounts = async () => {
-      const next = {};
+      try {
+        setLoadingSeats(true);
 
-      for (const trip of filteredTrips) {
-        try {
-          const res = await tcpRequest({
-            type: "LIST_SEATS",
-            tripId: trip.tripId,
-          });
+        const next = {};
 
-          console.log("LIST_SEATS response:", trip.tripId, res);
+        for (const trip of filteredTrips) {
+          try {
+            const res = await tcpRequest({
+              type: "ADMIN_GET_SEATS",
+              tripId: trip.tripId,
+            });
 
-          if (res.type === "SEATS") {
-            const seats = res.seats || {};
-            const available = Object.values(seats).filter(
-              (status) => status === "FREE"
-            ).length;
+            console.log("ADMIN_GET_SEATS response:", trip.tripId, res);
 
-            next[trip.tripId] = available;
+            if (res.type === "ADMIN_GET_SEATS_OK" && Array.isArray(res.seats)) {
+              const available = res.seats.filter(
+                (seat) => String(seat.seat_status).toUpperCase() === "FREE"
+              ).length;
+
+              next[trip.tripId] = available;
+            } else {
+              next[trip.tripId] = 0;
+            }
+          } catch (e) {
+            console.error("ADMIN_GET_SEATS failed:", trip.tripId, e);
+            next[trip.tripId] = 0;
           }
-        } catch (e) {
-          console.error("LIST_SEATS failed:", trip.tripId, e);
         }
-      }
 
-      if (!cancelled) {
-        setAvailableMap(next);
+        if (!cancelled) {
+          console.log("availableMap final:", next);
+          setAvailableMap(next);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingSeats(false);
+        }
       }
     };
 
@@ -175,7 +188,7 @@ export default function AdminLocation({ goPage, tcpRequest, notify }) {
       </div>
 
       <div className="card">
-        {loading ? (
+        {loadingTrips || loadingSeats ? (
           <div style={{ padding: "12px" }}>loading...</div>
         ) : timeSlots.length === 0 ? (
           <div style={{ padding: "12px" }}>no trips</div>

@@ -12,6 +12,7 @@
   "description": "",
   "dependencies": {
     "dotenv": "^17.2.4",
+    "nodemailer": "^8.0.6",
     "omise": "^1.1.0",
     "pg": "^8.18.0",
     "promptpay-qr": "^0.5.0",

@@ -2,10 +2,8 @@ const { pool } = require("./db");
 const fs = require("fs");
 const path = require("path");
 
-// ─────────────────────────────────────────────────────────
-// 1. ADMIN_GET_SEATS
-//    ดึงข้อมูลที่นั่งทั้งหมดของ trip พร้อมข้อมูลผู้จอง
-// ─────────────────────────────────────────────────────────
+//ADMIN_GET_SEATS
+//ดึงข้อมูลที่นั่งทั้งหมดของ trip พร้อมข้อมูลผู้จอง
 async function getAdminSeats(tripId) {
   const { rows } = await pool.query(
     `
