@@ -1,17 +1,27 @@
 require("dotenv").config();
-const fs = require("fs");
-const path = require("path");
 const crypto = require("crypto");
 const generatePayload = require("promptpay-qr");
 const QRCode = require("qrcode");
 const { pool } = require("./db");
+const cloudinary = require("./cloudinary");
 
-const PROMPTPAY_ID = "0813131998";
+const PROMPTPAY_ID = process.env.PROMPTPAY_ID || "0813131998";
 
-function ensureUploadDir() {
-  const dir = path.join(__dirname, "uploads", "slips");
-  fs.mkdirSync(dir, { recursive: true });
-  return dir;
+async function uploadSlipBase64(slipBase64, bookingId) {
+  const dataUrl = slipBase64.includes(",")
+    ? slipBase64
+    : `data:image/png;base64,${slipBase64}`;
+
+  const result = await cloudinary.uploader.upload(dataUrl, {
+    folder: "vann/slips",
+    public_id: `booking_${bookingId}_${Date.now()}_${crypto.randomUUID()}`,
+    resource_type: "image",
+  });
+
+  return {
+    secureUrl: result.secure_url,
+    publicId: result.public_id,
+  };
 }
 
 async function createManualPromptPayQR({ bookingId, userId }) {
@@ -51,7 +61,6 @@ async function submitPaymentSlip({
   userId,
   transferredAt,
   slipBase64,
-  slipFileName,
 }) {
   const client = await pool.connect();
 
@@ -88,17 +97,8 @@ async function submitPaymentSlip({
       return { ok: false, code: "NO_SLIP" };
     }
 
-    const uploadsDir = ensureUploadDir();
-    const ext = path.extname(slipFileName || "").toLowerCase() || ".png";
-    const safeExt = [".png", ".jpg", ".jpeg", ".webp"].includes(ext) ? ext : ".png";
-    const fileName = `booking_${bookingId}_${Date.now()}_${crypto.randomUUID()}${safeExt}`;
-    const filePath = path.join(uploadsDir, fileName);
-
-    const pureBase64 = slipBase64.includes(",")
-      ? slipBase64.split(",")[1]
-      : slipBase64;
-
-    fs.writeFileSync(filePath, Buffer.from(pureBase64, "base64"));
+    const uploaded = await uploadSlipBase64(slipBase64, bookingId);
+    const slipImagePath = uploaded.secureUrl;
 
     const existing = await client.query(
       `SELECT payment_id
@@ -124,7 +124,7 @@ async function submitPaymentSlip({
              reviewed_by = NULL,
              reject_reason = NULL
          WHERE payment_id = $1`,
-        [paymentId, booking.total_price, transferredAt || null, filePath]
+        [paymentId, booking.total_price, transferredAt || null, slipImagePath]
       );
     } else {
       const ins = await client.query(
@@ -132,7 +132,7 @@ async function submitPaymentSlip({
          (booking_id, amount, status, transferred_at, submitted_at, slip_image_path)
          VALUES ($1, $2, 'WAITING_VERIFY', $3, NOW(), $4)
          RETURNING payment_id`,
-        [bookingId, booking.total_price, transferredAt || null, filePath]
+        [bookingId, booking.total_price, transferredAt || null, slipImagePath]
       );
 
       paymentId = ins.rows[0].payment_id;
@@ -140,21 +140,21 @@ async function submitPaymentSlip({
 
     const seatRows = await client.query(
       `SELECT seat_id
-      FROM booking_seat
-      WHERE booking_id = $1`,
+       FROM booking_seat
+       WHERE booking_id = $1`,
       [bookingId]
     );
 
     for (const row of seatRows.rows) {
       await client.query(
         `UPDATE seat_status
-        SET status = 'BOOKED',
-            booked_user_id = $3,
-            booked_at = NOW(),
-            hold_token = NULL,
-            hold_user_id = NULL,
-            hold_expires_at = NULL
-        WHERE trip_id = $1 AND seat_id = $2`,
+         SET status = 'BOOKED',
+             booked_user_id = $3,
+             booked_at = NOW(),
+             hold_token = NULL,
+             hold_user_id = NULL,
+             hold_expires_at = NULL
+         WHERE trip_id = $1 AND seat_id = $2`,
         [booking.trip_id, row.seat_id, booking.user_id]
       );
     }
@@ -171,7 +171,7 @@ async function submitPaymentSlip({
     return {
       ok: true,
       paymentId,
-      slipImagePath: filePath,
+      slipImagePath,
     };
   } catch (e) {
     await client.query("ROLLBACK");
@@ -183,7 +183,8 @@ async function submitPaymentSlip({
 
 async function getPendingPayments() {
   const { rows } = await pool.query(
-    `SELECT
+    `
+    SELECT
       p.payment_id,
       p.booking_id,
       p.amount,
@@ -195,17 +196,35 @@ async function getPendingPayments() {
       b.user_id,
       b.trip_id,
       b.status AS booking_status,
-      b.hold_tokens_json,
-      bs.seat_id,
+      u.name,
+      u.phone,
+      u.email,
+      string_agg(bs.seat_id, ', ' ORDER BY bs.seat_id) AS booked_seats
+    FROM payment p
+    JOIN booking b
+      ON b.booking_id = p.booking_id
+    JOIN app_user u
+      ON u.user_id = b.user_id
+    LEFT JOIN booking_seat bs
+      ON bs.booking_id = b.booking_id
+    WHERE p.status = 'WAITING_VERIFY'
+    GROUP BY
+      p.payment_id,
+      p.booking_id,
+      p.amount,
+      p.status,
+      p.transferred_at,
+      p.submitted_at,
+      p.slip_image_path,
+      p.reject_reason,
+      b.user_id,
+      b.trip_id,
+      b.status,
       u.name,
       u.phone,
       u.email
-    FROM payment p
-    JOIN booking b ON b.booking_id = p.booking_id
-    JOIN booking_seat bs ON bs.booking_id = b.booking_id
-    JOIN app_user u ON u.user_id = b.user_id
-    WHERE p.status = 'WAITING_VERIFY'
-    ORDER BY p.submitted_at ASC NULLS LAST, p.created_at ASC`
+    ORDER BY p.submitted_at ASC NULLS LAST, p.payment_id ASC
+    `
   );
 
   return rows;
@@ -362,22 +381,10 @@ async function getPaymentSlipData({ paymentId }) {
     return { ok: false, code: "NO_SLIP_PATH" };
   }
 
-  if (!fs.existsSync(slipPath)) {
-    return { ok: false, code: "SLIP_FILE_NOT_FOUND" };
-  }
-
-  const ext = path.extname(slipPath).toLowerCase();
-  let mime = "image/png";
-  if (ext === ".jpg" || ext === ".jpeg") mime = "image/jpeg";
-  if (ext === ".webp") mime = "image/webp";
-
-  const base64 = fs.readFileSync(slipPath).toString("base64");
-  const dataUrl = `data:${mime};base64,${base64}`;
-
   return {
     ok: true,
     paymentId,
-    dataUrl,
+    dataUrl: slipPath,
     slipPath,
   };
 }

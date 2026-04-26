@@ -17,8 +17,8 @@ export default function ResetPassword({ email, goBack, goLogin, notify, tcpReque
       notify?.("OTP ต้องมี 6 หลัก", "error");
       return;
     }
-    if (password.length < 6) {
-      notify?.("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร", "error");
+    if (password.length < 8 || !/[A-Z]/.test(password)) {
+      notify?.("อย่างน้อย 8 ตัว และมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว", "error");
       return;
     }
     if (password !== confirm) {
@@ -93,7 +93,7 @@ export default function ResetPassword({ email, goBack, goLogin, notify, tcpReque
         <input
           className="input forget-input"
           type="password"
-          placeholder="รหัสผ่านใหม่ (อย่างน้อย 6 ตัว)"
+          placeholder="รหัสผ่านใหม่ (อย่างน้อย 8 ตัว และมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={loading}
@@ -115,7 +115,7 @@ export default function ResetPassword({ email, goBack, goLogin, notify, tcpReque
           onClick={handleReset}
           disabled={loading}
         >
-          {loading ? "กำลังบันทึก..." : "confirm"}
+          {loading ? "saving..." : "confirm"}
         </button>
       </div>
     </div>

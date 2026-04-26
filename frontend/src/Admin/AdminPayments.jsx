@@ -1,6 +1,49 @@
 import { useEffect, useState } from "react";
-import "./Dataseat.css";
+import "./AdminPayments.css";
 import BottomNav from "./BottomNav";
+
+function parseTripId(tripId) {
+    if (!tripId) return { destCode: "-", hhmm: "-" };
+    const parts = String(tripId).split("_");
+    return {
+        destCode: parts[1] || "-",
+        hhmm: parts[2] || "-",
+    };
+}
+
+function formatDest(destCode) {
+    if (destCode === "FP") return "future park rangsit";
+    if (destCode === "MC") return "mo chit";
+    if (destCode === "VM") return "victory monument";
+    return "-";
+}
+
+function formatTime(hhmm) {
+    const map = {
+        "1000": "10:00 am",
+        "1100": "11:00 am",
+        "1200": "12:00 pm",
+        "1300": "1:00 pm",
+        "1400": "2:00 pm",
+        "1500": "3:00 pm",
+        "1600": "4:00 pm",
+        "1700": "5:00 pm",
+    };
+    return map[String(hhmm)] || "-";
+}
+
+function formatDateTime(v) {
+    if (!v) return "-";
+    const d = new Date(v);
+    if (Number.isNaN(d.getTime())) return "-";
+    return d.toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+}
 
 export default function AdminPayments({ goPage, tcpRequest, notify }) {
     const [payments, setPayments] = useState([]);
@@ -103,10 +146,10 @@ export default function AdminPayments({ goPage, tcpRequest, notify }) {
                 ⬅
             </button>
 
-            <div className="location-title">pending payments</div>
+            <div className="location-title">Unverified Payment</div>
 
             <div className="table-wrapper">
-                <table className="seat-table">
+                <table className="payment-table">
                     <thead>
                         <tr>
                             <th>booking</th>
@@ -125,46 +168,51 @@ export default function AdminPayments({ goPage, tcpRequest, notify }) {
                                 <td colSpan="3">no pending payments</td>
                             </tr>
                         ) : (
-                            payments.map((p) => (
-                                <tr key={p.payment_id}>
-                                    <td className="booking-cell">
-                                        To : {p.destination || "-"} <br />
-                                        Time : {p.departure_time || "-"} <br />
-                                        seat : {p.seat_no || "-"}
-                                    </td>
+                            payments.map((p) => {
+                                const parsed = parseTripId(p.trip_id);
 
-                                    <td className="info-cell">
-                                        username : {p.name} <br />
-                                        phone : {p.phone || "-"} <br />
-                                        paid time : {p.paytime || "-"} <br />
-                                        paid date : {p.paydate || "-"} <br />
-                                        amount : {(Number(p.amount) / 100).toFixed(2)} ฿
-                                    </td>
+                                return (
+                                    <tr key={p.payment_id}>
+                                        <td>
+                                            To : {formatDest(parsed.destCode)} <br />
+                                            Time : {formatTime(parsed.hhmm)} <br />
+                                            seat : {p.booked_seats || "-"}
+                                        </td>
 
-                                    <td className="payment-cell">
-                                        <button
-                                            className="slip-btn"
-                                            onClick={() => openSlip(p.payment_id)}
-                                        >
-                                            🖼
-                                        </button>
+                                        <td>
+                                            username : {p.name || "-"} <br />
+                                            phone : {p.phone || "-"} <br />
+                                            paid at : {formatDateTime(p.transferred_at || p.submitted_at)}<br />
+                                            amount : {(Number(p.amount) / 100).toFixed(2)} ฿
+                                        </td>
 
-                                        <button
-                                            className="reject-btn"
-                                            onClick={() => rejectPayment(p.booking_id)}
-                                        >
-                                            reject
-                                        </button>
+                                        <td>
+                                            <div className="action-box">
+                                                <button
+                                                    className="view-slip-btn"
+                                                    onClick={() => openSlip(p.payment_id)}
+                                                >
+                                                    View slip
+                                                </button>
 
-                                        <button
-                                            className="accept-btn"
-                                            onClick={() => approvePayment(p.booking_id)}
-                                        >
-                                            accept
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
+                                                <button
+                                                    className="reject-btn"
+                                                    onClick={() => rejectPayment(p.booking_id)}
+                                                >
+                                                    Reject
+                                                </button>
+
+                                                <button
+                                                    className="accept-btn"
+                                                    onClick={() => approvePayment(p.booking_id)}
+                                                >
+                                                    Accept
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         )}
                     </tbody>
                 </table>
@@ -173,6 +221,12 @@ export default function AdminPayments({ goPage, tcpRequest, notify }) {
             {selectedSlip && (
                 <div className="popup" onClick={() => setSelectedSlip(null)}>
                     <div className="popup-content" onClick={(e) => e.stopPropagation()}>
+                        <button
+                            className="slip-close-btn"
+                            onClick={() => setSelectedSlip(null)}
+                        >
+                            ×
+                        </button>
                         <img src={selectedSlip} alt="slip" style={{ width: "100%" }} />
                     </div>
                 </div>

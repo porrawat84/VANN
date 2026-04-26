@@ -93,11 +93,9 @@ export default function MyTicket({ goPage, tcpRequest, notify }) {
     try {
       setLoading(true);
 
-      console.log("GET_BOOKINGS request");
       const res = await tcpRequest({
         type: "GET_BOOKINGS",
       });
-      console.log("GET_BOOKINGS response:", res);
 
       if (res.type !== "BOOKINGS") {
         notify?.(res.code || "โหลดตั๋วไม่สำเร็จ", "error");

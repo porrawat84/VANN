@@ -1,17 +1,15 @@
 .app {
     width: 100%;
     max-width: 420px;
-    /* จำกัดไม่ให้ใหญ่เกิน */
     padding: 30px;
     display: block;
     justify-content: center;
-    background:#F0F0F0;
+    background: #F0F0F0;
     height: 100vh;
     overflow-y: auto;
-
-
-    position: relative; 
-    padding-bottom: 90px; /* ไม่งั้น table จะโดน nav ทับ */
+    position: relative;
+    z-index: 0;
+    padding-bottom: 90px;
 }
 
 
@@ -149,19 +147,30 @@
 
 .popup {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background: rgba(0,0,0,0.6);
     display: flex;
     justify-content: center;
     align-items: center;
+    z-index: 9999;
+}
+
+.popup-content {
+    background: white;
+    padding: 12px;
+    border-radius: 14px;
+    z-index: 10000;
+    max-width: 340px;
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
 .popup-content img {
-    max-width: 300px;
+    width: 100%;
+    max-height: 75vh;
+    object-fit: contain;
     border-radius: 10px;
+    display: block;
 }
 
 
@@ -201,25 +210,45 @@
     gap: 6px;
     padding: 4px 2px;
 }
-
-/*สี status */
+/* 🔥 ปุ่มสถานะใหม่ */
 .status {
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 8px;
-    border: 1px solid black;
-    width: 70px;
+    padding: 5px 16px;
+    border-radius: 999px;   /* 👈 มนสุด */
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Grandstander', cursive;
+
+    display: inline-block;
+    text-align: center;
+    min-width: 100px;
+
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+    transition: 0.2s;
 }
 
-/* สีแต่ละสถานะ */
+/* ❌ no select */
 .status.empty {
-    background: #ddd;
+    background: #e0e0e0;
+    color: #666;
+}
+
+/* 🟡 waiting */
+.status.waiting {
+    background: linear-gradient(135deg, #ffe57f, #ffd54f);
     color: #333;
 }
 
-.status.waiting {
-    background: #fff3a3;
-    color: #333;
+/* 🟢 success */
+.status.success {
+    background: linear-gradient(135deg, #b9ff9f, #8cff66);
+    color: #0a3d00;
+}
+
+/* ✨ hover (เฉพาะ waiting) */
+.status.waiting:hover {
+    transform: scale(1.05);
+    cursor: pointer;
 }
 
 .status.success {
@@ -299,7 +328,6 @@
     background: white;
     border-radius: 20px;
     padding: 20px;
-    border: 2px solid #000;
     box-shadow: 0 8px 20px rgba(0,0,0,0.25);
     font-family: 'Grandstander', cursive;
 }
@@ -347,4 +375,92 @@
 
 .payment-popup2 .accept-btn {
     background: #b9ff9f;
+}
+
+.payment-popup2 {
+    position: relative;
+}
+
+.popup-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 50%;
+    background: #eeeeee;
+    font-size: 22px;
+    cursor: pointer;
+}
+
+.file-slip-btn {
+    width: 100%;
+    margin: 14px 0;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1.5px solid #ccc;
+    background: #f7f7f7;
+    font-family: 'Grandstander', cursive;
+    font-size: 15px;
+    text-align: left;
+    cursor: pointer;
+}
+.payment-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.payment-popup2 {
+    width: 85%;
+    max-width: 350px;
+    background: #fff;
+    border-radius: 20px;
+    padding: 24px;
+    position: relative;
+    z-index: 1001;
+}
+.slip-close-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+
+    width: 36px;
+    height: 36px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: transparent; /* 👈 เอาพื้นหลังออก */
+    color: white;            /* 👈 ให้ตัดกับรูป */
+
+    font-size: 26px;
+    font-weight: 700;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+
+    text-shadow: 0 2px 6px rgba(0,0,0,0.6); /* 👈 ช่วยให้มองเห็นชัด */
+    z-index: 10001;
+
+    transition: 0.2s ease;
+}
+
+.slip-close-btn:hover {
+    background: #eeeeee;
+    transform: scale(1.08);
+}
+
+
+.popup-content {
+    position: relative;
+    overflow: hidden;
 }
