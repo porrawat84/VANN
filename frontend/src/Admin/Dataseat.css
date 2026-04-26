@@ -230,7 +230,7 @@
 /* ❌ no select */
 .status.empty {
     background: #b5ff80;
-    color: #666;
+    color: #333;
 }
 
 /* 🟡 waiting */
