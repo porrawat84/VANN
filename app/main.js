@@ -20,7 +20,11 @@ let win;
 let socket;
 let buffer = "";
 
+console.log("TCP_HOST =", TCP_HOST);//test
+console.log("TCP_PORT =", TCP_PORT);//test
+
 function connectTCP() {
+  console.log("Trying TCP connect...");//test
   socket = net.createConnection({ host: TCP_HOST, port: TCP_PORT }, () => {
     console.log(`Electron connected to TCP server at ${TCP_HOST}:${TCP_PORT}`);
     if (win && !win.isDestroyed()) {
@@ -31,6 +35,7 @@ function connectTCP() {
   socket.setEncoding("utf8");
 
   socket.on("data", (chunk) => {
+    console.log("TCP raw chunk =", chunk);//test
     buffer += chunk;
     let idx;
     while ((idx = buffer.indexOf("\n")) >= 0) {
