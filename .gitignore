@@ -39,4 +39,15 @@ dist-ssr
 *.sln
 *.sw?
 
+# env files
+.env
+.env.*
+backend/.env
+backend/.env.*
+backend/server/.env
+backend/server/.env.*
+frontend/.env
+frontend/.env.*
+app/.env
+app/.env.*
 
