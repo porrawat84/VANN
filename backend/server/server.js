@@ -1,11 +1,6 @@
 const net = require("net");
 require("dotenv").config();
 
-const { sendPasswordResetEmail } = require("./emailService");
-
-// เก็บ OTP ใน Memory  { email → { otp, expiresAt } }
-const otpStore = new Map();
-
 const { listSeats, holdSeat, confirmSeat, releaseExpiredHolds, ensureTripSeats, } = require("./seatService");
 const { createBooking, getBookings, getBookingDetail } = require("./bookingService");
 const { sendChat, getChatHistory, getAdminChatList } = require("./chatService");
@@ -23,7 +18,6 @@ const {
 const { isBookingOpen } = require("./tripUtil");
 const { registerUser, loginUser, updateUserProfile, getUserRole } = require("./authService");
 const { DESTS, TIMES, bangkokNow, makeTripId } = require("./tripUtil");
-const nodemailer = require("nodemailer");//test
 
 const PORT = Number(process.env.PORT || 9000);
 
@@ -200,119 +194,6 @@ const server = net.createServer((socket) => {
             email: r.email,
             role: r.role,
           });
-          continue;
-        }
-
-        // ---- forgot password
-        if (msg.type === "FORGOT_PASSWORD") {
-          const email = (msg.email || "").trim().toLowerCase();
-
-          if (!email) {
-            reply({ type: "FORGOT_PASSWORD_FAIL", code: "NO_EMAIL" });
-            continue;
-          }
-
-          try {
-            const { pool } = require("./db");
-
-            // เช็คว่า email มีในระบบไหม
-            const { rows } = await pool.query(
-              `SELECT user_id, name FROM app_user WHERE LOWER(email) = $1`,
-              [email]
-            );
-
-            console.log("FORGOT_PASSWORD user rows:", rows);//test
-
-
-            if (rows.length === 0) {
-              reply({ type: "FORGOT_PASSWORD_OK" });
-              continue;
-            }
-
-            const user = rows[0];
-            // สร้าง OTP 6 หลัก
-            const otp = String(Math.floor(100000 + Math.random() * 900000));
-            const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 นาที
-
-            // เก็บใน Map
-            otpStore.set(email, { otp, expiresAt, userId: user.user_id });
-
-            console.log("About to send OTP mail to:", email, "otp:", otp);//test
-            // ส่งอีเมล
-            await sendPasswordResetEmail(email, otp, user.name);
-
-            console.log(`OTP sent to ${email}: ${otp}`);
-            reply({ type: "FORGOT_PASSWORD_OK" });
-
-          } catch (err) {
-            console.error("FORGOT_PASSWORD error:", err);
-            reply({ type: "FORGOT_PASSWORD_FAIL", code: "SERVER_ERROR" });
-          }
-
-          continue;
-        }
-
-        // ---- reset password (กรอก OTP + password ใหม่)
-        if (msg.type === "RESET_PASSWORD") {
-          const email = (msg.email || "").trim().toLowerCase();
-          const otp = (msg.otp || "").trim();
-          const password = (msg.password || "").trim();
-
-          if (!email || !otp || !password) {
-            reply({ type: "RESET_PASSWORD_FAIL", code: "MISSING_FIELDS" });
-            continue;
-          }
-
-          if (password.length < 8) {
-            reply({ type: "RESET_PASSWORD_FAIL", code: "PASSWORD_TOO_SHORT" });
-            continue;
-          }
-
-          const record = otpStore.get(email);
-
-          if (!record) {
-            reply({ type: "RESET_PASSWORD_FAIL", code: "OTP_NOT_FOUND" });
-            continue;
-          }
-
-          if (new Date() > record.expiresAt) {
-            otpStore.delete(email);
-            reply({ type: "RESET_PASSWORD_FAIL", code: "OTP_EXPIRED" });
-            continue;
-          }
-
-          if (record.otp !== otp) {
-            reply({ type: "RESET_PASSWORD_FAIL", code: "OTP_WRONG" });
-            continue;
-          }
-
-          try {
-            const crypto = require("crypto");
-            const { pool } = require("./db");
-
-            // Hash password ใหม่ (ใช้วิธีเดียวกับ authService.js)
-            const salt = crypto.randomBytes(16).toString("hex");
-            const hash = crypto
-              .pbkdf2Sync(password, salt, 120000, 32, "sha256")
-              .toString("hex");
-            const passwordHash = `pbkdf2$120000$${salt}$${hash}`;
-
-            await pool.query(
-              `UPDATE app_user SET password_hash = $1 WHERE user_id = $2`,
-              [passwordHash, record.userId]
-            );
-
-            // ลบ OTP ออกจาก Map ทันที ใช้ได้ครั้งเดียว
-            otpStore.delete(email);
-
-            console.log(`Password reset success for userId: ${record.userId}`);
-            reply({ type: "RESET_PASSWORD_OK" });
-
-          } catch (err) {
-            console.error("RESET_PASSWORD error:", err);
-            reply({ type: "RESET_PASSWORD_FAIL", code: "SERVER_ERROR" });
-          }
-
           continue;
         }
 

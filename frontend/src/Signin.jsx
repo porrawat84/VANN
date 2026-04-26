@@ -4,7 +4,7 @@ import logo from "./assets/image/logo.png";
 import bg from "./assets/image/background.png";
 import { useEffect } from "react";
 
-export default function Signin({ goSignup, goForget, notify, goLocation, goAdmin }) {
+export default function Signin({ goSignup, notify, goLocation, goAdmin }) {
 
     // สร้าง State สำหรับเก็บ Email และ Password
     const [formData, setFormData] = useState({
@@ -99,7 +99,6 @@ export default function Signin({ goSignup, goForget, notify, goLocation, goAdmin
                     </button>
                 </div>
 
-                <p className="forgot" onClick={goForget}>forget password?</p>
             </div>
         </div>
     );

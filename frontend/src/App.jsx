@@ -4,8 +4,6 @@ import Signup from "./Signup";
 import Location from "./Location";
 import Time from "./Time";
 import Seat from "./Seat";
-import Forgetpass from "./Forgetpass";
-import ResetPassword from "./ResetPassword";
 import UserBottomNav from './UserBottomNav';
 import Payment from "./Payment";
 import UserChat from "./UserChat";
@@ -58,7 +56,6 @@ export default function App() {
   };
 
   const [page, setPage] = useState("signin");
-  const [resetEmail, setResetEmail] = useState("");
 
   const [paymentPageData, setPaymentPageData] = useState(null);
   const [connected, setConnected] = useState(false);
@@ -222,28 +219,12 @@ export default function App() {
   const pages = {
     signin: <Signin notify={notify}
       goSignup={() => goTo("signup")}
-      goForget={() => goTo("forgetpass")}
       goLocation={() => goTo("location")}
       goAdmin={() => goTo("adminHome")} />,
 
     signup: <Signup goNext={() => goTo("signin")}
       notify={notify}
       goBack={() => goTo("signin")} />,
-
-    forgetpass: <Forgetpass
-      goBack={() => goTo("signin")}
-      goReset={(email) => { setResetEmail(email); goTo("resetpassword"); }}
-      notify={notify}
-      tcpRequest={tcpRequest}
-    />,
-
-    resetpassword: <ResetPassword
-      email={resetEmail}
-      goBack={() => goTo("forgetpass")}
-      goLogin={() => goTo("signin")}
-      notify={notify}
-      tcpRequest={tcpRequest}
-    />,
 
     location: <Location goNext={() => goTo("time")} goChat={() => goTo("userChat")} />,
     time: <Time goBack={() => goTo("location")} goNext={() => goTo("seat")} />,
