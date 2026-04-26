@@ -1,17 +1,21 @@
 /* ===== จัดการ Layout หน้า Forget Password ===== */
 .forget-app {
-    justify-content: flex-start; /* ดันเนื้อหาขึ้นไปด้านบน */
+    justify-content: flex-start;
+    /* ดันเนื้อหาขึ้นไปด้านบน */
     padding-top: 60px;
-    margin: 0 auto; /* จัดให้อยู่กลางหน้าจอ */
+    margin: 0 auto;
+    /* จัดให้อยู่กลางหน้าจอ */
 }
 
 /* ===== ส่วน Header (ลูกศร + ข้อความ) ===== */
 .forget-header {
     display: flex;
     align-items: center;
-    width: 300px; /* ให้กว้างเท่ากล่องเหลือง */
+    width: 300px;
+    /* ให้กว้างเท่ากล่องเหลือง */
     position: relative;
-    margin: 0 auto; /* จัดให้อยู่กลางหน้าจอ */
+    margin: 0 auto;
+    /* จัดให้อยู่กลางหน้าจอ */
 
 }
 
@@ -40,7 +44,7 @@
     justify-content: center;
     margin-top: 4%;
 
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
     transition: 0.2s;
 }
 
@@ -66,10 +70,11 @@
     flex-direction: column;
     gap: 10px;
 
-    box-shadow: 0 12px 25px rgba(0,0,0,0.25);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.25);
     align-items: center;
     margin-top: -30px;
-    margin: 0 auto; /* จัดให้อยู่กลางหน้าจอ */
+    margin: 0 auto;
+    /* จัดให้อยู่กลางหน้าจอ */
 
 }
 
@@ -86,10 +91,10 @@
 .forget-input {
     height: 40px;
     width: 100%;
-    border: 1px solid black !important; 
+    border: 1px solid black !important;
     margin-bottom: 5px;
     margin-top: 0px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important; 
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3) !important;
     border-radius: 20px;
 }
 
@@ -104,8 +109,26 @@
     color: black;
     background-color: #FFC4C4;
     padding: 10px;
-    box-shadow: 1px 4px 6px rgba(0,0,0,0.3); 
+    box-shadow: 1px 4px 6px rgba(0, 0, 0, 0.3);
+}
 
-    
-    
+/* Inline error message */
+.field-error {
+    color: #e05c5c;
+    font-size: 0.75rem;
+    margin: -8px 0 6px 4px;
+    text-align: left;
+}
+
+/* Hint text below input */
+.field-hint {
+    color: #a0a0a0;
+    font-size: 0.75rem;
+    margin: -8px 0 6px 4px;
+    text-align: left;
+}
+
+/* Red border when field has error */
+.input-error {
+    border-color: #e05c5c !important;
 }
