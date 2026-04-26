@@ -221,14 +221,15 @@ const server = net.createServer((socket) => {
               [email]
             );
 
+            console.log("FORGOT_PASSWORD user rows:", rows);//test
+
+
             if (rows.length === 0) {
-              // ไม่บอกว่าไม่มี email เพื่อความปลอดภัย
               reply({ type: "FORGOT_PASSWORD_OK" });
               continue;
             }
 
             const user = rows[0];
-
             // สร้าง OTP 6 หลัก
             const otp = String(Math.floor(100000 + Math.random() * 900000));
             const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 นาที
@@ -236,6 +237,7 @@ const server = net.createServer((socket) => {
             // เก็บใน Map
             otpStore.set(email, { otp, expiresAt, userId: user.user_id });
 
+            console.log("About to send OTP mail to:", email, "otp:", otp);//test
             // ส่งอีเมล
             await sendPasswordResetEmail(email, otp, user.name);
 

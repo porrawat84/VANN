@@ -8,6 +8,15 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+//test
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("SMTP verify error:", error);
+  } else {
+    console.log("SMTP server is ready");
+  }
+});
+
 async function sendPasswordResetEmail(email, otp, name = "") {
   console.log("SMTP_USER =", process.env.SMTP_USER);//test
   console.log("SMTP_FROM =", process.env.SMTP_FROM);//test
