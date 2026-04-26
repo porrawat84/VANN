@@ -42,8 +42,8 @@ async function registerUser({ name, email, phone, password }) {
 
 async function loginUser({ email, password }) {
   const { rows } = await pool.query(
-    `SELECT user_id, password_hash, role, name, phone, email
-     FROM app_user
+    `SELECT user_id, email, password_hash, role, name, phone
+     FROM public.app_user
      WHERE email = $1`,
     [email]
   );
