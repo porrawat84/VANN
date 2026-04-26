@@ -260,7 +260,7 @@ const server = net.createServer((socket) => {
             continue;
           }
 
-          if (password.length < 6) {
+          if (password.length < 8) {
             send(socket, { type: "RESET_PASSWORD_FAIL", code: "PASSWORD_TOO_SHORT" });
             continue;
           }
