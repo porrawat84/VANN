@@ -207,7 +207,7 @@ const server = net.createServer((socket) => {
           const email = (msg.email || "").trim().toLowerCase();
 
           if (!email) {
-            send(socket, { type: "FORGOT_PASSWORD_FAIL", code: "NO_EMAIL" });
+            reply({ type: "FORGOT_PASSWORD_FAIL", code: "NO_EMAIL" });
             continue;
           }
 
@@ -222,7 +222,7 @@ const server = net.createServer((socket) => {
 
             if (rows.length === 0) {
               // ไม่บอกว่าไม่มี email เพื่อความปลอดภัย
-              send(socket, { type: "FORGOT_PASSWORD_OK" });
+              reply({ type: "FORGOT_PASSWORD_OK" });
               continue;
             }
 
@@ -243,7 +243,7 @@ const server = net.createServer((socket) => {
 
           } catch (err) {
             console.error("FORGOT_PASSWORD error:", err);
-            send(socket, { type: "FORGOT_PASSWORD_FAIL", code: "SERVER_ERROR" });
+            reply({ type: "FORGOT_PASSWORD_FAIL", code: "SERVER_ERROR" });
           }
 
           continue;
@@ -256,30 +256,30 @@ const server = net.createServer((socket) => {
           const password = (msg.password || "").trim();
 
           if (!email || !otp || !password) {
-            send(socket, { type: "RESET_PASSWORD_FAIL", code: "MISSING_FIELDS" });
+            reply({ type: "RESET_PASSWORD_FAIL", code: "MISSING_FIELDS" });
             continue;
           }
 
           if (password.length < 8) {
-            send(socket, { type: "RESET_PASSWORD_FAIL", code: "PASSWORD_TOO_SHORT" });
+            reply({ type: "RESET_PASSWORD_FAIL", code: "PASSWORD_TOO_SHORT" });
             continue;
           }
 
           const record = otpStore.get(email);
 
           if (!record) {
-            send(socket, { type: "RESET_PASSWORD_FAIL", code: "OTP_NOT_FOUND" });
+            reply({ type: "RESET_PASSWORD_FAIL", code: "OTP_NOT_FOUND" });
             continue;
           }
 
           if (new Date() > record.expiresAt) {
             otpStore.delete(email);
-            send(socket, { type: "RESET_PASSWORD_FAIL", code: "OTP_EXPIRED" });
+            reply({ type: "RESET_PASSWORD_FAIL", code: "OTP_EXPIRED" });
             continue;
           }
 
           if (record.otp !== otp) {
-            send(socket, { type: "RESET_PASSWORD_FAIL", code: "OTP_WRONG" });
+            reply({ type: "RESET_PASSWORD_FAIL", code: "OTP_WRONG" });
             continue;
           }
 
@@ -307,7 +307,7 @@ const server = net.createServer((socket) => {
 
           } catch (err) {
             console.error("RESET_PASSWORD error:", err);
-            send(socket, { type: "RESET_PASSWORD_FAIL", code: "SERVER_ERROR" });
+            reply({ type: "RESET_PASSWORD_FAIL", code: "SERVER_ERROR" });
           }
 
           continue;

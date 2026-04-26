@@ -1,20 +1,46 @@
 {
   "name": "app",
   "version": "1.0.0",
+  "description": "VANN desktop app",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder --win"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^40.3.0"
+    "electron": "^40.3.0",
+    "electron-builder": "^25.1.8"
   },
   "dependencies": {
     "dotenv": "^17.3.1",
     "electron-reload": "^2.0.0-alpha.1"
   },
-  "description": ""
+  "build": {
+    "appId": "com.vann.app",
+    "productName": "VANN",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../frontend/dist",
+        "to": "frontend-dist"
+      },
+      {
+        "from": ".env",
+        "to": ".env"
+      }
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  }
 }
