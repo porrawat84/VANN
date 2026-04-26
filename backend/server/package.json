@@ -11,6 +11,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "cloudinary": "^2.10.0",
     "dotenv": "^17.2.4",
     "nodemailer": "^8.0.6",
     "omise": "^1.1.0",
