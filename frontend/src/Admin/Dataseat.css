@@ -229,7 +229,7 @@
 
 /* ❌ no select */
 .status.empty {
-    background: #e0e0e0;
+    background: #b5ff80;
     color: #666;
 }
 
@@ -239,9 +239,9 @@
     color: #333;
 }
 
-/* 🟢 success */
-.status.success {
-    background: linear-gradient(135deg, #b9ff9f, #8cff66);
+/* 🟢 booked */
+.status.booked {
+    background: linear-gradient(135deg, #ff9f9f, #ff6666);
     color: #0a3d00;
 }
 
@@ -251,8 +251,8 @@
     cursor: pointer;
 }
 
-.status.success {
-    background: #b6f2b6;
+.status.booked.hover {
+    background: #f2b6b6;
     color: #111;
 }
 
