@@ -108,8 +108,6 @@ export default function App() {
     }
 
     const handler = (msg) => {
-      console.log("Renderer got tcp-message:", msg);//test
-
       const cb = msg.requestId && pendingRef.current.get(msg.requestId);
       if (cb) return cb(msg);
 
@@ -118,20 +116,6 @@ export default function App() {
         notify(msg.message || msg.code || "server error", "error");
         return;
       }
-
-      if (msg.type === "TCP_CONNECTED") {
-        console.log("TCP connected");
-      }//test
-
-      if (msg.type === "TCP_ERROR") {
-        console.log("TCP_ERROR =", msg.message);
-        notify(`TCP error: ${msg.message}`, "error");
-      }//test
-
-      if (msg.type === "TCP_CLOSED") {
-        console.log("TCP closed");
-        notify("TCP closed", "error");
-      }//test
 
       if (msg.type === "TODAY_TRIPS") setTodayTrips(msg.trips || []);
       if (msg.type === "SEATS") setSeats(msg.seats || {});
