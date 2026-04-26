@@ -53,6 +53,7 @@ app/.env.*
 
 # uploads
 backend/server/uploads/
+uploads/
 
 # dependencies
 node_modules/
