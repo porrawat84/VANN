@@ -29,7 +29,6 @@ const PORT = Number(process.env.PORT || 9000);
 // --- clients + subscriptions
 const clients = new Set(); // { socket, userId, role, tripId }
 function send(socket, obj) {
-  console.log("TCP OUT ->", obj);
   socket.write(JSON.stringify(obj) + "\n");
 }
 function broadcastToTrip(tripId, obj) {
@@ -46,17 +45,12 @@ function broadcastToAdmins(obj) {
 setInterval(() => { releaseExpiredHolds().catch(() => { }); }, 1000);
 
 const server = net.createServer((socket) => {
-  console.log("Client connected:", socket.remoteAddress, socket.remotePort);
-
-  send(socket, { type: "TEST", message: "hi from server" });
-
 
   socket.on("error", (err) => {
     console.log("Client socket error:", err.code || err.message);
   });
 
   socket.on("close", () => {
-    console.log("Client disconnected:", socket.remoteAddress, socket.remotePort);
   });
   socket.setEncoding("utf8");
   let buffer = "";
@@ -78,7 +72,6 @@ const server = net.createServer((socket) => {
       let msg;
       try {
         msg = JSON.parse(line);
-        console.log("TCP IN <-", msg);
       } catch {
         send(socket, { type: "ERROR", code: "BAD_JSON" });
         continue;

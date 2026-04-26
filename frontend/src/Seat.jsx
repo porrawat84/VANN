@@ -76,12 +76,6 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
   };
 
   const openSummary = () => {
-    console.log("openSummary()", {
-        tripId,
-        userId,
-        effectiveUserId,
-        selected,
-      });
 
       if (!tripId) {
         notify("ยังโหลดรอบรถไม่เสร็จ", "error");
@@ -123,10 +117,7 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
       setCreatingBooking(true);
       holdTokensRef.current = {};
 
-      console.log("STEP 1: start HOLD", bookingData);
-
       for (const seatId of bookingData.seats) {
-        console.log("STEP 1.1: HOLD seat", seatId);
 
         const holdMsg = await tcpRequest({
           type: "HOLD",
@@ -135,8 +126,6 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
           userId: Number(userId),
         });
 
-        console.log("STEP 1.2: HOLD response", holdMsg);
-
         if (holdMsg.type !== "HOLD_OK") {
           notify(`จองที่นั่ง ${seatId} ไม่สำเร็จ: ${holdMsg.code || holdMsg.message || "unknown"}`, "error");
           return;
@@ -144,14 +133,6 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
 
         holdTokensRef.current[seatId] = holdMsg.holdToken;
       }
-
-      console.log("STEP 2: CREATE_BOOKING request", {
-        tripId: bookingData.tripId,
-        seats: bookingData.seats,
-        totalPriceBaht: bookingData.price,
-        holdTokens: holdTokensRef.current,
-        userId: Number(userId),
-      });
 
       const bookingRes = await tcpRequest({
         type: "CREATE_BOOKING",
@@ -162,25 +143,16 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
         userId: Number(userId),
       });
 
-      console.log("STEP 2.1: CREATE_BOOKING response", bookingRes);
-
       if (bookingRes.type !== "CREATE_BOOKING_OK") {
         notify(`สร้าง booking ไม่สำเร็จ: ${bookingRes.code || bookingRes.message || "unknown"}`, "error");
         return;
       }
-
-      console.log("STEP 3: PAYMENT_CREATE_PROMPTPAY request", {
-        bookingId: bookingRes.bookingId,
-        userId: Number(userId),
-      });
 
       const paymentRes = await tcpRequest({
         type: "PAYMENT_CREATE_PROMPTPAY",
         bookingId: bookingRes.bookingId,
         userId: Number(userId),
       });
-
-      console.log("STEP 3.1: PAYMENT_CREATE_PROMPTPAY response", paymentRes);
 
       if (paymentRes.type !== "PAYMENT_QR") {
         notify(paymentRes.code || "สร้าง QR payment ไม่สำเร็จ", "error");

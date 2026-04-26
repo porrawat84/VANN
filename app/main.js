@@ -21,13 +21,6 @@ function connectTCP() {
     }
 });
 
-setTimeout(() => {
-  if (win && !win.isDestroyed()) {
-    console.log("Sending IPC test to renderer");
-    win.webContents.send("tcp-message", { type: "IPC_TEST", message: "hello from main" });
-  }
-}, 3000); //test
-
   socket.setEncoding("utf8");
   socket.on("data", (chunk) => {
     buffer += chunk;
@@ -57,8 +50,6 @@ ipcMain.on("tcp-send", (_, packet) => {
     console.log("Socket not connected");
     return;
   }
-
-  console.log("Sending to TCP server:", packet);//เอาไว้debugเฉยๆส่งจริงอย่าลืมลบออก 
 
   socket.write(JSON.stringify(packet) + "\n");
 });

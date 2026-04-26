@@ -20,8 +20,6 @@ import AdminDashboardChat from "./Admin/DashboardChat";
 import AdminChatRoom from "./Admin/ChatRoom";
 import AdminProfile from "./Admin/AdminProfile";
 import AdminPayments from "./Admin/AdminPayments";
-import DashboardChat from "./Admin/DashboardChat";
-import ChatRoom from "./Admin/ChatRoom";
 
 function bangkokYMD() {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -104,27 +102,15 @@ export default function App() {
     return `${bangkokYMD()}_${dest}_${hhmm}`;
   };
 
-  //const didInit = useRef(false);
   const didHello = useRef(false);
-  //if (didInit.current) return;อยู่ในuseEffect
-  //didInit.current = true;อยู่ในuseEffect
 
-  //window.tcp.offAllMessages?.();
   useEffect(() => {
     if (!window.tcp?.onMessage) {
       console.error("window.tcp.onMessage not available");
       return;
     }
 
-    console.log("App listener attached");
-
     const handler = (msg) => {
-      console.log("TCP message from server:", msg);
-
-      if (msg.type === "IPC_TEST") {
-        console.log("Renderer got IPC_TEST:", msg);
-        return;
-      }
 
       const cb = msg.requestId && pendingRef.current.get(msg.requestId);
       if (cb) return cb(msg);
@@ -195,7 +181,6 @@ export default function App() {
     if (page !== "seat") return;
 
     const tripId = computeTripIdFromSelection();
-    console.log("SELECTED tripId =", tripId);
 
     setSelectedTripId(tripId);
     window.tcp.send({ type: "SUBSCRIBE_TRIP", tripId });

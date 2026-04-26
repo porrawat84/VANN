@@ -55,7 +55,6 @@ export default function Signin({ goSignup, goForget, notify, goLocation, goAdmin
             password: formData.password
             });
         } else {
-            console.log("Mock login");
             goLocation();
         }
         };
