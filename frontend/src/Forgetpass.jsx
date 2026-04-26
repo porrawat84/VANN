@@ -69,7 +69,7 @@ export default function ForgetPassword({ goBack, goReset, notify, tcpRequest }) 
           className="input forget-input"
           type="email"
           name="email"
-          placeholder="example@email.com"
+          placeholder="example@gmail.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSendEmail()}
@@ -81,7 +81,7 @@ export default function ForgetPassword({ goBack, goReset, notify, tcpRequest }) 
           onClick={handleSendEmail}
           disabled={loading}
         >
-          {loading ? "กำลังส่ง..." : "send email"}
+          {loading ? "sending..." : "send OTP"}
         </button>
       </div>
     </div>
