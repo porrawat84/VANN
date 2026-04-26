@@ -8,30 +8,32 @@ function Location({ goPage}) {
         goPage("adminLocation");
     };
 
-    return (
-        <div className="app" >
-            <img src={logo} className="location-logo" />
-            <p className="home-tagline">for admin</p>
-            <div className="location-container">
-            <div className="content location">
+return (
+    <div className="app">
+        <img src={logo} className="admin-location-logo" />
 
-                <button className="btn location" onClick={() => handleSelect("FP")}>
+        <p className="admin-home-tagline">for admin</p>
+
+        <div className="admin-location-container">
+            <div className="admin-location-content">
+
+                <button className="admin-location-btn" onClick={() => handleSelect("FP")}>
                     Future Park Rangsit
                 </button>
 
-                <button className="btn location" onClick={() => handleSelect("MC")}>
+                <button className="admin-location-btn" onClick={() => handleSelect("MC")}>
                     Mo Chit
                 </button>
 
-                <button className="btn location" onClick={() => handleSelect("VM")}>
+                <button className="admin-location-btn" onClick={() => handleSelect("VM")}>
                     Victory Monument
                 </button>
-                
-            </div>
-            </div>
-            <div><BottomNav goPage={goPage} currentPage="adminHome" /></div>
-        </div>
-    );
-}
 
+            </div>
+        </div>
+
+        <BottomNav goPage={goPage} currentPage="adminHome" />
+    </div>
+);
+}
 export default Location;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import "./Dataseat.css";
+import "./AdminPayments.css";
 import BottomNav from "./BottomNav";
 
 function parseTripId(tripId) {
@@ -146,10 +146,10 @@ export default function AdminPayments({ goPage, tcpRequest, notify }) {
                 ⬅
             </button>
 
-            <div className="location-title">pending payments</div>
+            <div className="location-title">Unverified Payment</div>
 
             <div className="table-wrapper">
-                <table className="seat-table">
+                <table className="payment-table">
                     <thead>
                         <tr>
                             <th>booking</th>
@@ -182,22 +182,31 @@ export default function AdminPayments({ goPage, tcpRequest, notify }) {
                                         <td>
                                             username : {p.name || "-"} <br />
                                             phone : {p.phone || "-"} <br />
-                                            paid at : {formatDateTime(p.transferred_at || p.submitted_at)}
+                                            paid at : {formatDateTime(p.transferred_at || p.submitted_at)}<br />
                                             amount : {(Number(p.amount) / 100).toFixed(2)} ฿
                                         </td>
 
                                         <td>
-                                            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                                                <button className="slip-btn" onClick={() => openSlip(p.payment_id)}>
-                                                    🖼
+                                            <div className="action-box">
+                                                <button
+                                                    className="view-slip-btn"
+                                                    onClick={() => openSlip(p.payment_id)}
+                                                >
+                                                    View slip
                                                 </button>
 
-                                                <button className="btn cancel" onClick={() => rejectPayment(p.booking_id)}>
-                                                    reject
+                                                <button
+                                                    className="reject-btn"
+                                                    onClick={() => rejectPayment(p.booking_id)}
+                                                >
+                                                    Reject
                                                 </button>
 
-                                                <button className="btn save" onClick={() => approvePayment(p.booking_id)}>
-                                                    accept
+                                                <button
+                                                    className="accept-btn"
+                                                    onClick={() => approvePayment(p.booking_id)}
+                                                >
+                                                    Accept
                                                 </button>
                                             </div>
                                         </td>
@@ -212,6 +221,12 @@ export default function AdminPayments({ goPage, tcpRequest, notify }) {
             {selectedSlip && (
                 <div className="popup" onClick={() => setSelectedSlip(null)}>
                     <div className="popup-content" onClick={(e) => e.stopPropagation()}>
+                        <button
+                            className="slip-close-btn"
+                            onClick={() => setSelectedSlip(null)}
+                        >
+                            ×
+                        </button>
                         <img src={selectedSlip} alt="slip" style={{ width: "100%" }} />
                     </div>
                 </div>

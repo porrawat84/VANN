@@ -20,19 +20,19 @@ function Location({ goNext, goChat }) {
     >
       <img src={logo} className="location-logo" />
 
-      <div className="content location">
+      <div className="user content location">
         <h2>choose your destination</h2>
         <h3>from : thammasat van terminal</h3>
 
-        <button className="btn location" onClick={() => handleSelect("FP")}>
+        <button className="user-location-btn" onClick={() => handleSelect("FP")}>
           Future Park Rangsit
         </button>
 
-        <button className="btn location" onClick={() => handleSelect("MC")}>
+        <button className="user-location-btn" onClick={() => handleSelect("MC")}>
           Mo Chit
         </button>
 
-        <button className="btn location" onClick={() => handleSelect("VM")}>
+        <button className="user-location-btn" onClick={() => handleSelect("VM")}>
           Victory Monument
         </button>
       </div>
