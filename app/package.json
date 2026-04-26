@@ -41,12 +41,12 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "build/icon.ico"
+      "icon": "build/iconvann.ico"
     },
     "nsis": {
-      "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico",
-      "installerHeaderIcon": "build/icon.ico"
+      "installerIcon": "build/iconvann.ico",
+      "uninstallerIcon": "build/iconvann.ico",
+      "installerHeaderIcon": "build/iconvann.ico"
     }
   }
 }
