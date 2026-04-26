@@ -178,12 +178,39 @@ export default function Payment({ data, tcpRequest, notify, goBack, goDone }) {
           <label style={{ display: "block", marginBottom: "6px" }}>
             transfer time
           </label>
-          <input
-            type="datetime-local"
-            value={transferTime}
-            onChange={(e) => setTransferTime(e.target.value)}
-            style={{ width: "100%", marginBottom: "10px" }}
-          />
+
+          {transferTime ? (
+            <div style={{ marginBottom: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div className="payment-info" style={{ flex: 1, margin: 0, padding: "0 15px" }}>
+                  {new Date(transferTime).toLocaleString("th-TH")}
+                </div>
+                <button
+                  className="payment-confirm-btn"
+                  style={{ width: "auto", padding: "0 16px", marginTop: 0 }}
+                  onClick={() => setTransferTime("")}
+                >
+                  แก้ไข
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ marginBottom: "10px" }}>
+              <input
+                type="datetime-local"
+                value={transferTime}
+                onChange={(e) => setTransferTime(e.target.value)}
+                style={{ width: "100%", marginBottom: "8px" }}
+              />
+              <button
+                className="payment-confirm-btn"
+                style={{ marginTop: 0, background: "#b7d6f2" }}
+                onClick={() => setTransferTime(new Date().toISOString().slice(0, 16))}
+              >
+                ใช้เวลาตอนนี้
+              </button>
+            </div>
+          )}
 
           <label style={{ display: "block", marginBottom: "6px" }}>
             upload slip
