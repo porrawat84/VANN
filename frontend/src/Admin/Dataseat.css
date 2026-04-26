@@ -229,19 +229,19 @@
 
 /* ❌ no select */
 .status.empty {
-    background: #b5ff80;
-    color: #333;
+    background: #b0fc97;
+    color: #0a3d00;
 }
 
 /* 🟡 waiting */
 .status.waiting {
-    background: linear-gradient(135deg, #ffe57f, #ffd54f);
-    color: #333;
+    background: #fff4b0;
+    color: #0a3d00;
 }
 
 /* 🟢 booked */
-.status.booked {
-    background: linear-gradient(135deg, #ff9f9f, #ff6666);
+.status.success {
+    background: #ff9b9b;
     color: #0a3d00;
 }
 

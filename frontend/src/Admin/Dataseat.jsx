@@ -178,7 +178,7 @@ export default function Dataseat({ goPage, tcpRequest, notify }) {
     });
 
     const getStatusText = (status) => {
-        if (status === "success") return "success";
+        if (status === "success") return "booked";
         if (status === "waiting") return "waiting";
         return"available";
     };
