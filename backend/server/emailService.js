@@ -1,29 +1,22 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  family: 4,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-});
-
-//test
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("SMTP verify error:", error);
-  } else {
-    console.log("SMTP server is ready");
-  }
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
 });
 
 async function sendPasswordResetEmail(email, otp, name = "") {
-  console.log("SMTP_USER =", process.env.SMTP_USER);//test
-  console.log("SMTP_FROM =", process.env.SMTP_FROM);//test
-  console.log("Sending reset email to =", email);//test
-
   const mailOptions = {
-    from: process.env.SMTP_FROM,
+    from: process.env.SMTP_USER,
     to: email,
     subject: "VANN Password Reset OTP",
     text: `
@@ -37,10 +30,7 @@ If you did not request this, please ignore this email.
     `,
   };
 
-  const info = await transporter.sendMail(mailOptions);//test
-  console.log("sendMail info =", info);//test
-
-  return info;
+  return transporter.sendMail(mailOptions);
 }
 
 module.exports = { sendPasswordResetEmail };
