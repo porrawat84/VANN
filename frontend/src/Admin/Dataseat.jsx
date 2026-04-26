@@ -367,8 +367,8 @@ export default function Dataseat({ goPage, tcpRequest, notify }) {
                 <strong>Booking</strong>
                 <div>To : {formatDest(destCode)}</div>
                 <div>Time : {formatTimeLabel(timeLabelToHhmm(time))}</div>
-                <div>Selected seat : {selectedPayment.id}</div>
                 <div>Booked seats : {selectedPayment.booked_seats}</div>
+                <div>Total amount : {selectedPayment.total_price} ฿</div>
             </div>
 
             {selectedPayment.payment_id ? (
