@@ -67,7 +67,7 @@ function mapSeatRow(row) {
     if (paymentStatus === "WAITING_VERIFY" || seatStatus === "HELD") {
         status = "waiting";
     } else if (seatStatus === "BOOKED" || paymentStatus === "APPROVED") {
-        status = "ิbooked";
+        status = "success";
     }
 
     return {
@@ -171,23 +171,23 @@ export default function Dataseat({ goPage, tcpRequest, notify }) {
 
     const filteredSeats = seats.filter((s) => {
         if (filter === "all") return true;
-        if (filter === "booked") return s.status === "booked";
+        if (filter === "booked") return s.status === "success";
         if (filter === "available") return s.status === "empty";
         if (filter === "waiting") return s.status === "waiting";
         return true;
     });
 
     const getStatusText = (status) => {
-        if (status === "booked") return "booked";
+        if (status === "success") return "success";
         if (status === "waiting") return "waiting";
         return"available";
     };
 
     const totalSeats = seats.length;
     const availableSeats = seats.filter((s) => s.status === "empty").length;
-    const bookedSeats = seats.filter((s) => s.status === "booked").length;
+    const bookedSeats = seats.filter((s) => s.status === "success").length;
     const totalMoney = seats
-        .filter((s) => s.status === "booked" && s.price !== "-")
+        .filter((s) => s.status === "success" && s.price !== "-")
         .reduce((sum, s) => sum + Number(s.price || 0), 0)
         .toFixed(2);
 
