@@ -1,22 +1,18 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
+  host: "smtp.resend.com",
   port: 465,
   secure: true,
-  family: 4,
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: "resend",
+    pass: process.env.RESEND_API_KEY,
   },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
 });
 
 async function sendPasswordResetEmail(email, otp, name = "") {
   const mailOptions = {
-    from: process.env.SMTP_USER,
+    from: process.env.EMAIL_FROM,
     to: email,
     subject: "VANN Password Reset OTP",
     text: `
