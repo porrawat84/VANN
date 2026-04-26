@@ -51,3 +51,20 @@ frontend/.env.*
 app/.env
 app/.env.*
 
+# uploads
+backend/server/uploads/
+
+# dependencies
+node_modules/
+backend/node_modules/
+backend/server/node_modules/
+frontend/node_modules/
+app/node_modules/
+
+# build outputs
+dist/
+build/
+out/
+release/
+frontend/dist/
+
