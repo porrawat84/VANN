@@ -23,6 +23,8 @@ const {
 const { isBookingOpen } = require("./tripUtil");
 const { registerUser, loginUser, updateUserProfile, getUserRole } = require("./authService");
 const { DESTS, TIMES, bangkokNow, makeTripId } = require("./tripUtil");
+const { sendPasswordResetEmail } = require("./emailService");//test
+const nodemailer = require("nodemailer");//test
 
 const PORT = Number(process.env.PORT || 9000);
 
