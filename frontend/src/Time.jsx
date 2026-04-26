@@ -74,7 +74,6 @@ function Time({ goBack, goNext }) {
           {TIME_OPTIONS.map((t) => {
             const departMin = hhmmToMinutes(t.hhmm);
             const closed = nowMin >= (departMin - CLOSE_BEFORE_MIN);
-            const closed = false;
 
             return (
               <button
