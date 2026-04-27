@@ -236,12 +236,12 @@ const server = net.createServer((socket) => {
 
         if (msg.type === "HOLD") {
           if (actorUserId == null) {
-            send(socket, { type: "HOLD_FAIL", tripId: msg.tripId, code: "AUTH_REQUIRED" });
+            reply({ type: "HOLD_FAIL", tripId: msg.tripId, code: "AUTH_REQUIRED" });
             continue;
           }
           const open = isBookingOpen(msg.tripId);
           if (!open.ok) {
-            send(socket, { type: "HOLD_FAIL", tripId: msg.tripId, code: open.code });
+            reply({ type: "HOLD_FAIL", tripId: msg.tripId, code: open.code });
             continue;
           }
 
@@ -269,7 +269,7 @@ const server = net.createServer((socket) => {
 
         if (msg.type === "CONFIRM") {
           if (actorUserId == null) {
-            send(socket, { type: "CONFIRM_FAIL", tripId: msg.tripId, code: "AUTH_REQUIRED" });
+            reply({ type: "CONFIRM_FAIL", tripId: msg.tripId, code: "AUTH_REQUIRED" });
             continue;
           }
 

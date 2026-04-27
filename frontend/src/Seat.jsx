@@ -123,7 +123,7 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
           type: "HOLD",
           tripId: bookingData.tripId,
           seat: seatId,
-          userId: Number(userId),
+          userId: Number(effectiveUserId),
         });
 
         if (holdMsg.type !== "HOLD_OK") {
@@ -140,7 +140,7 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
         seats: bookingData.seats,
         totalPriceBaht: bookingData.price,
         holdTokens: holdTokensRef.current,
-        userId: Number(userId),
+        userId: Number(effectiveUserId),
       });
 
       if (bookingRes.type !== "CREATE_BOOKING_OK") {
@@ -151,7 +151,7 @@ export default function Seat({ goBack, seats, tripId, userId, tcpRequest, notify
       const paymentRes = await tcpRequest({
         type: "PAYMENT_CREATE_PROMPTPAY",
         bookingId: bookingRes.bookingId,
-        userId: Number(userId),
+        userId: Number(effectiveUserId),
       });
 
       if (paymentRes.type !== "PAYMENT_QR") {
