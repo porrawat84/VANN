@@ -206,10 +206,19 @@ const server = net.createServer((socket) => {
         if (msg.type === "GET_TODAY_TRIPS") {
           const now = bangkokNow();
 
+          const bangkokDate = new Date(
+            now.year,
+            now.month - 1,
+            now.day,
+            now.hour,
+            now.minute,
+            0
+          );
+
           const trips = [];
           for (const dest of DESTS) {
             for (const t of TIMES) {
-              const tripId = makeTripId(now, dest, t);
+              const tripId = makeTripId(bangkokDate, dest, t);
 
               trips.push({
                 tripId,
@@ -221,7 +230,7 @@ const server = net.createServer((socket) => {
 
           reply({
             type: "TODAY_TRIPS",
-            date: now.toISOString(),
+            date: bangkokDate.toISOString(),
             trips,
           });
           continue;
