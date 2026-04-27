@@ -1,14 +1,35 @@
 const DESTS = ["FP", "MC", "VM"];
 const TIMES = ["1000","1100","1200","1300","1400","1500","1600","1700"];
 
-//14 ที่
+// 14 ที่
 const SEATS = ["A1","A2","B1","B2","B3","C1","C2","C3","D1","D2","D3","E1","E2","E3"];
 
 function bangkokNow() {
   const now = new Date();
-  // แปลงให้เป็นเวลาไทย
-  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-  return new Date(utc + 7 * 3600000);
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+
+  const get = (type) => parts.find((p) => p.type === type)?.value;
+
+  return {
+    year: Number(get("year")),
+    month: Number(get("month")),
+    day: Number(get("day")),
+    hour: Number(get("hour")),
+    minute: Number(get("minute")),
+  };
+}
+
+function fmtYYYYMMDDFromParts({ year, month, day }) {
+  return `${year}${String(month).padStart(2, "0")}${String(day).padStart(2, "0")}`;
 }
 
 function fmtYYYYMMDD(d) {
@@ -23,7 +44,6 @@ function makeTripId(dateObj, destCode, hhmm) {
 }
 
 function parseTripId(tripId) {
-  // 20260211_FP_1000
   const [ymd, dest, hhmm] = String(tripId).split("_");
   if (!ymd || !dest || !hhmm) return null;
 
@@ -36,19 +56,28 @@ function parseTripId(tripId) {
   if (!DESTS.includes(dest)) return null;
   if (!TIMES.includes(hhmm)) return null;
 
-  const departAt = new Date(Date.UTC(y, m - 1, d, hh - 7, mm, 0));
-
-  return { y, m, d, dest, hhmm, departAt };
+  return { y, m, d, dest, hhmm, hh, mm };
 }
 
 // ปิดจองก่อนออก 1 นาที
 function isBookingOpen(tripId, now = bangkokNow()) {
-  
   const info = parseTripId(tripId);
   if (!info) return { ok: false, code: "BAD_TRIP_ID" };
 
-  const closeAt = new Date(info.departAt.getTime() - 60 * 1000);
-  if (now >= closeAt) return { ok: false, code: "TRIP_CLOSED" };
+  const todayYmd = fmtYYYYMMDDFromParts(now);
+  const tripYmd = `${info.y}${String(info.m).padStart(2, "0")}${String(info.d).padStart(2, "0")}`;
+
+  // ถ้าเป็นคนละวัน ยังไม่ต้องปิดด้วยเวลา
+  if (todayYmd !== tripYmd) return { ok: true };
+
+  const nowMin = now.hour * 60 + now.minute;
+  const departMin = info.hh * 60 + info.mm;
+  const closeMin = departMin - 1;
+
+  if (nowMin >= closeMin) {
+    return { ok: false, code: "TRIP_CLOSED" };
+  }
+
   return { ok: true };
 }
 
